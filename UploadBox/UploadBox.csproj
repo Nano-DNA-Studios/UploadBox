@@ -11,8 +11,4 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="NanoDNA.AutomationResults" Version="0.0.2" />
-  </ItemGroup>
-
 </Project>
