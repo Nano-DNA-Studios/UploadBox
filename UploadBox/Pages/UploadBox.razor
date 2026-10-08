@@ -1,0 +1,75 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using global::UploadBox.Models
+@using global::UploadBox.Services
+@implements IDisposable
+
+<label class="upload-drop-zone flex-fill @(IsDragOver ? "drag-over" : "")" @ondragenter="HandleDragEnter" @ondragleave="HandleDragLeave" @ondragover:preventDefault @ondrop="HandleDrop">
+    <InputFile class="upload-input" OnChange="HandleFileUpload" disabled="@Controller.IsUploading" multiple="@Controller.Options.AllowMultipleFiles" />
+    <span class="upload-title">Drop an OS image here</span>
+    <span class="upload-subtitle">or click to browse</span>
+</label>
+
+@code {
+
+    [Parameter]
+    public EventCallback<UploadRequest> UploadRequested { get; set; }
+
+    [Parameter, EditorRequired]
+    public UploadBoxController Controller { get; set; } = null!;
+
+    private bool IsDragOver;
+
+    private int dragCounter;
+
+    protected override void OnInitialized()
+    {
+        if (Controller == null)
+            throw new InvalidOperationException("UploadBox requires an UploadBoxController parameter.");
+
+        Controller.StateChanged += HandleControllerStateChanged;
+    }
+
+    private void HandleDragEnter(DragEventArgs _)
+    {
+        dragCounter++;
+        IsDragOver = true;
+    }
+
+    private void HandleDragLeave(DragEventArgs _)
+    {
+        dragCounter--;
+
+        if (dragCounter <= 0)
+        {
+            dragCounter = 0;
+            IsDragOver = false;
+        }
+    }
+
+    private void HandleDrop(DragEventArgs _)
+    {
+        dragCounter = 0;
+        IsDragOver = false;
+    }
+
+    private async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        IReadOnlyList<IBrowserFile> files = e.GetMultipleFiles(int.MaxValue);
+
+        Controller.MarkFilesSelected(files.Count);
+
+        await UploadRequested.InvokeAsync(new UploadRequest(files));
+    }
+
+    private void HandleControllerStateChanged(object? sender, EventArgs e)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (Controller is not null)
+            Controller.StateChanged -= HandleControllerStateChanged;
+    }
+}
