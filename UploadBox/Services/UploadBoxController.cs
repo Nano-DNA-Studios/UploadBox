@@ -41,8 +41,6 @@ namespace UploadBox.Services
 
         private bool IsInvalidDirectoryPath(string directory) => string.IsNullOrWhiteSpace(directory) || directory == "..";
 
-        private bool IsTooManyFiles(bool hasBatchFileCountError, UploadFileRejection rejection) => hasBatchFileCountError && rejection.Reason == UploadRejectionReason.TooManyFiles;
-
         private bool IsValidExtension(IBrowserFile file)
         {
             string fileExtension = Path.GetExtension(file.Name);
@@ -50,83 +48,68 @@ namespace UploadBox.Services
             return string.IsNullOrEmpty(Options.FileExtension) || string.Equals(fileExtension, Options.FileExtension, StringComparison.OrdinalIgnoreCase);
         }
 
-        private bool IsBlocked(List<IBrowserFile> validFiles, List<UploadFileRejection> rejectedFiles, List<UploadRejectionReason> batchRejectionReasons)
+        private bool IsBlocked(List<UploadFileValidationResult> fileResults)
         {
-            bool hasRejections = rejectedFiles.Count > 0 || batchRejectionReasons.Count > 0;
+            bool hasRejections = fileResults.Any(file => !file.IsAccepted);
+            bool hasAcceptedFiles = fileResults.Any(file => file.IsAccepted);
 
-            return Options.Policy == UploadPolicy.Strict ? hasRejections : validFiles.Count == 0;
+            return Options.Policy == UploadPolicy.Strict ? hasRejections : !hasAcceptedFiles;
         }
 
-        private void FilterFiles(IReadOnlyList<IBrowserFile> files, List<IBrowserFile> validFiles, List<UploadFileRejection> rejectedFiles)
+        private void FilterFiles(IReadOnlyList<IBrowserFile> files, List<UploadFileValidationResult> fileResults)
         {
             foreach (IBrowserFile file in files)
             {
-                UploadFileRejection? rejection = GetFileRejection(file);
+                UploadFileValidationResult validationResult = GetFileValidationResult(file);
 
-                if (rejection is not null)
+                if (!validationResult.IsAccepted)
                 {
-                    rejectedFiles.Add(rejection);
+                    fileResults.Add(validationResult);
                     continue;
                 }
 
-                if (validFiles.Count >= Options.MaxFileCount)
+                if (fileResults.Count(result => result.IsAccepted) >= Options.MaxFileCount)
                 {
                     string message = $"'{file.Name}' was not selected because the maximum file count is {Options.MaxFileCount}.";
-                    rejectedFiles.Add(new UploadFileRejection(file, UploadRejectionReason.TooManyFiles, message));
+                    fileResults.Add(new UploadFileValidationResult(file, UploadRejectionReason.TooManyFiles, message));
                     continue;
                 }
 
-                validFiles.Add(file);
+                fileResults.Add(validationResult);
             }
         }
 
-        private UploadFileRejection? GetFileRejection(IBrowserFile file)
+        private UploadFileValidationResult GetFileValidationResult(IBrowserFile file)
         {
             if (!IsValidExtension(file))
             {
                 string message = $"'{file.Name}' does not use the required extension '{Options.FileExtension}'.";
-
-                return new UploadFileRejection(file, UploadRejectionReason.InvalidExtension, message);
+                return new UploadFileValidationResult(file, UploadRejectionReason.InvalidExtension, message);
             }
 
             if (file.Size > Options.MaxFileSizeBytes)
             {
                 string message = $"'{file.Name}' exceeds the maximum allowed size of {Options.MaxFileSizeBytes} bytes.";
-
-                return new UploadFileRejection(file, UploadRejectionReason.FileTooLarge, message);
+                return new UploadFileValidationResult(file, UploadRejectionReason.FileTooLarge, message);
             }
 
-            return null;
+            return new UploadFileValidationResult(file, UploadRejectionReason.None, string.Empty);
         }
 
         public UploadValidationResult ValidateFiles(IReadOnlyList<IBrowserFile> files)
         {
             if (files == null || files.Count == 0)
-            {
-                return new UploadValidationResult(
-                    Array.Empty<IBrowserFile>(),
-                    Array.Empty<UploadFileRejection>(),
-                    new[] { UploadRejectionReason.EmptySelection },
-                    isBlocked: true,
-                    "No files were selected.");
-            }
+                return new UploadValidationResult(Array.Empty<UploadFileValidationResult>(), isBlocked: true, "No files were selected.");
 
-            List<IBrowserFile> validFiles = new(files.Count);
-            List<UploadFileRejection> rejectedFiles = new List<UploadFileRejection>();
-            List<UploadRejectionReason> batchRejectionReasons = new List<UploadRejectionReason>();
+            //Replace FilterFiles with returning the list
+            List<UploadFileValidationResult> fileResults = new List<UploadFileValidationResult>(files.Count);
+            FilterFiles(files, fileResults);
 
-            FilterFiles(files, validFiles, rejectedFiles);
+            bool isBlocked = IsBlocked(fileResults);
+            int acceptedCount = fileResults.Count(file => file.IsAccepted);
+            string message = CreateValidationMessage(files.Count, acceptedCount, fileResults, isBlocked);
 
-            if (files.Count > Options.MaxFileCount)
-                batchRejectionReasons.Add(UploadRejectionReason.TooManyFiles);
-
-            bool isBlocked = IsBlocked(validFiles, rejectedFiles, batchRejectionReasons);
-
-            IReadOnlyList<IBrowserFile> acceptedFiles = isBlocked ? Array.Empty<IBrowserFile>() : validFiles.ToArray();
-
-            string message = CreateValidationMessage(files.Count, acceptedFiles.Count, rejectedFiles, batchRejectionReasons, isBlocked);
-
-            return new UploadValidationResult(acceptedFiles, rejectedFiles.ToArray(), batchRejectionReasons.Distinct().ToArray(), isBlocked, message);
+            return new UploadValidationResult(fileResults.ToArray(), isBlocked, message);
         }
 
         private async Task<StagedUploadFile> StageUploadFileAsync(UploadContext context, CancellationToken cancellationToken)
@@ -232,11 +215,11 @@ namespace UploadBox.Services
 
         private bool IsValidUploadFile(IBrowserFile file, string fileName, out UploadFileResult invalidResult)
         {
-            UploadFileRejection? rejection = GetFileRejection(file);
+            UploadFileValidationResult validationResult = GetFileValidationResult(file);
 
-            if (rejection != null)
+            if (!validationResult.IsAccepted)
             {
-                invalidResult = CreateStandaloneErrorResult(file, fileName, rejection.Message!);
+                invalidResult = CreateStandaloneErrorResult(file, fileName, validationResult.Message);
                 return false;
             }
 
@@ -340,6 +323,7 @@ namespace UploadBox.Services
             return CreateFailedUploadResult(context, UploadFileResultStatus.Cancelled, message);
         }
 
+        //Need to remove the exception, we can just do a message? Otherwise we just need to throw it at the end
         private UploadFileResult CreateErrorResult(UploadContext context, Exception exception)
         {
             string message = $"Upload failed for '{context.File.Name}': {exception.Message}";
@@ -426,31 +410,24 @@ namespace UploadBox.Services
             UpdateProgress(update);
         }
 
-        private string CreateValidationMessage(int selectedCount, int acceptedCount, IReadOnlyList<UploadFileRejection> rejectedFiles, IReadOnlyList<UploadRejectionReason> batchRejectionReasons, bool isBlocked)
+        private string CreateValidationMessage(int selectedCount, int acceptedCount, IReadOnlyList<UploadFileValidationResult> fileResults, bool isBlocked)
         {
             List<string> errors = new List<string>();
-            bool hasBatchFileCountError = batchRejectionReasons.Contains(UploadRejectionReason.TooManyFiles);
+            bool hasTooManyFilesError = false;
 
-            foreach (UploadRejectionReason reason in batchRejectionReasons.Distinct())
+            foreach (UploadFileValidationResult validationResult in fileResults.Where(file => !file.IsAccepted))
             {
-                string? message = reason switch
+                if (validationResult.Reason == UploadRejectionReason.TooManyFiles)
                 {
-                    UploadRejectionReason.None => null,
-                    UploadRejectionReason.EmptySelection => "No files were selected.",
-                    UploadRejectionReason.TooManyFiles => $"{selectedCount} files were selected, but the maximum allowed is {Options.MaxFileCount}.",
-                    _ => $"The selection failed validation: {reason}."
-                };
+                    if (hasTooManyFilesError)
+                        continue;
 
-                if (message is not null)
-                    errors.Add(message);
-            }
-
-            foreach (UploadFileRejection rejection in rejectedFiles)
-            {
-                if (IsTooManyFiles(hasBatchFileCountError, rejection))
+                    hasTooManyFilesError = true;
+                    errors.Add($"{selectedCount} files were selected, but the maximum allowed is {Options.MaxFileCount}.");
                     continue;
+                }
 
-                errors.Add(rejection.Message);
+                errors.Add(validationResult.Message);
             }
 
             if (isBlocked && errors.Count == 0)
@@ -466,11 +443,8 @@ namespace UploadBox.Services
                 : $"{acceptedCount} of {selectedCount} file(s) are ready to upload. " +
                   $"{errors.Count} validation {errorLabel} found. Rejected files will be skipped.";
 
-            
-
             return summary + Environment.NewLine + details;
         }
-
         private static void DeleteTemporaryFile(string temporaryPath)
         {
             if (File.Exists(temporaryPath))

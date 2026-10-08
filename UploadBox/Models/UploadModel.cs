@@ -2,18 +2,6 @@
 
 namespace UploadBox.Models
 {
-    
-
-    public enum UploadBoxStatus
-    {
-        Idle,
-        FileSelected,
-        Uploading,
-        Completed,
-        Cancelled,
-        Error
-    }
-
     public sealed class UploadRequest
     {
         public IReadOnlyList<IBrowserFile> Files { get; }
@@ -35,7 +23,7 @@ namespace UploadBox.Models
         InvalidExtension
     }
 
-    public sealed class UploadFileRejection
+    public sealed class UploadFileValidationResult
     {
         public IBrowserFile File { get; }
 
@@ -47,7 +35,9 @@ namespace UploadBox.Models
 
         public string Message { get; }
 
-        public UploadFileRejection(IBrowserFile file, UploadRejectionReason reason, string message)
+        public bool IsAccepted => Reason == UploadRejectionReason.None;
+
+        public UploadFileValidationResult(IBrowserFile file, UploadRejectionReason reason, string message)
         {
             File = file;
             Reason = reason;
@@ -57,23 +47,17 @@ namespace UploadBox.Models
 
     public sealed class UploadValidationResult
     {
-        public IReadOnlyList<IBrowserFile> AcceptedFiles { get; }
-
-        public IReadOnlyList<UploadFileRejection> RejectedFiles { get; }
-
-        public IReadOnlyList<UploadRejectionReason> BatchRejectionReasons { get; }
+        public IReadOnlyList<UploadFileValidationResult> Files { get; }
 
         public bool IsBlocked { get; }
 
-        public bool CanUpload => !IsBlocked && AcceptedFiles.Count > 0;
+        public bool CanUpload => !IsBlocked && Files.Any(file => file.IsAccepted);
 
         public string Message { get; }
 
-        public UploadValidationResult(IReadOnlyList<IBrowserFile> acceptedFiles, IReadOnlyList<UploadFileRejection> rejectedFiles, IReadOnlyList<UploadRejectionReason> batchRejectionReasons, bool isBlocked, string message)
+        public UploadValidationResult(IReadOnlyList<UploadFileValidationResult> files, bool isBlocked, string message)
         {
-            AcceptedFiles = acceptedFiles;
-            RejectedFiles = rejectedFiles;
-            BatchRejectionReasons = batchRejectionReasons;
+            Files = files;
             IsBlocked = isBlocked;
             Message = message;
         }
