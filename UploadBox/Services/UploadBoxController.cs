@@ -3,7 +3,15 @@ using UploadBox.Models;
 
 namespace UploadBox.Services
 {
-
+    public enum UploadBoxStatus
+    {
+        Idle,
+        FileSelected,
+        Uploading,
+        Completed,
+        Cancelled,
+        Error
+    }
 
     public sealed class UploadBoxController
     {

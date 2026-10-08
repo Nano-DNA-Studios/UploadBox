@@ -2,14 +2,7 @@
 
 namespace UploadBox.Models
 {
-    public enum UploadRejectionReason
-    {
-        None,
-        EmptySelection,
-        TooManyFiles,
-        FileTooLarge,
-        InvalidExtension
-    }
+    
 
     public enum UploadBoxStatus
     {
@@ -31,6 +24,15 @@ namespace UploadBox.Models
         {
             Files = files;
         }
+    }
+
+    public enum UploadRejectionReason
+    {
+        None,
+        EmptySelection,
+        TooManyFiles,
+        FileTooLarge,
+        InvalidExtension
     }
 
     public sealed class UploadFileRejection
