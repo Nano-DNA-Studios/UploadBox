@@ -86,18 +86,12 @@ namespace UploadBox.Models
 
         public bool WasOverwritten { get; }
 
-        public StagedUploadFile StagedUpload { get; set; }
-
-        public bool WasCommitted { get; set; }
-
         public UploadContext(IBrowserFile file, string safeFileName, string destinationPath, bool wasOverwritten)
         {
             File = file;
             SafeFileName = safeFileName;
             DestinationPath = destinationPath;
             WasOverwritten = wasOverwritten;
-
-            StagedUpload = new StagedUploadFile(string.Empty, 0, null);
         }
 
         public static UploadContext NewContext(IBrowserFile file, string safeFileName, string directoryPath)
@@ -112,29 +106,19 @@ namespace UploadBox.Models
 
     internal abstract record StageResult;
 
-    internal sealed record StageReady(
-        string TemporaryPath,
-        long BytesWritten) : StageResult;
+    internal sealed record StageReady(string TemporaryPath, long BytesWritten) : StageResult;
 
     internal sealed record StageCancelled : StageResult;
 
-    internal sealed record StageFailed(
-        UploadFailureCode Code,
-        Exception? Cause = null) : StageResult;
+    internal sealed record StageFailed(UploadFailureCode Code, Exception? Cause = null) : StageResult;
 
     public abstract record UploadFileResult;
 
-    public sealed record UploadSucceeded(
-        UploadFile File,
-        UploadFileStats Stats) : UploadFileResult;
+    public sealed record UploadSucceeded(UploadFile File, UploadFileStats Stats) : UploadFileResult;
 
-    public sealed record UploadCancelled(
-        string FileName) : UploadFileResult;
+    public sealed record UploadCancelled(string FileName) : UploadFileResult;
 
-    public sealed record UploadFailed(
-        string FileName,
-        UploadFailureCode Code,
-        string UserMessage) : UploadFileResult;
+    public sealed record UploadFailed(string FileName, UploadFailureCode Code, string UserMessage) : UploadFileResult;
 
     public enum UploadFailureCode
     {

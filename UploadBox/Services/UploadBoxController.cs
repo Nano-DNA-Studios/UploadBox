@@ -41,6 +41,8 @@ namespace UploadBox.Services
 
         private bool IsInvalidDirectoryPath(string directory) => string.IsNullOrWhiteSpace(directory) || directory == "..";
 
+        private bool IsValidUploadSize(IBrowserFile file, long bytesWritten) => file.Size == bytesWritten;
+
         private bool IsValidExtension(IBrowserFile file)
         {
             string fileExtension = Path.GetExtension(file.Name);
@@ -56,9 +58,51 @@ namespace UploadBox.Services
             return Options.Policy == UploadPolicy.Strict ? hasRejections : !hasAcceptedFiles;
         }
 
+        private bool IsValidUploadFile(IBrowserFile file, string fileName, out UploadFileResult invalidResult)
+        {
+            UploadFileValidationResult validationResult = GetFileValidationResult(file);
+
+            if (validationResult.IsAccepted)
+            {
+                invalidResult = null!;
+                return true;
+            }
+
+            UploadFailureCode code = validationResult.Reason switch
+            {
+                UploadRejectionReason.InvalidExtension => UploadFailureCode.InvalidExtension,
+                UploadRejectionReason.FileTooLarge => UploadFailureCode.FileTooLarge,
+                _ => UploadFailureCode.TransferFailed
+            };
+
+            invalidResult = CreateFailure(file.Name, code);
+            return false;
+        }
+
+        private bool IsStagedSuccess(UploadContext context, StageResult stageResult, out UploadFileResult result)
+        {
+            if (stageResult is StageReady)
+            {
+                result = null!;
+                return true;
+            }
+
+            if (stageResult is StageCancelled)
+            {
+                result = CreateCancelledResult(context.File.Name);
+                return false;
+            }
+
+            StageFailed failure = (StageFailed)stageResult;
+            result = CreateFailure(context.File.Name, failure.Code);
+            return false;
+        }
+
         private UploadFileValidationResult[] FilterFiles(IReadOnlyList<IBrowserFile> files)
         {
             List<UploadFileValidationResult> fileResults = new List<UploadFileValidationResult>();
+            int acceptedCount = 0;
+
 
             foreach (IBrowserFile file in files)
             {
@@ -70,7 +114,7 @@ namespace UploadBox.Services
                     continue;
                 }
 
-                if (fileResults.Count(result => result.IsAccepted) >= Options.MaxFileCount)
+                if (acceptedCount >= Options.MaxFileCount)
                 {
                     string message = $"'{file.Name}' was not selected because the maximum file count is {Options.MaxFileCount}.";
                     fileResults.Add(new UploadFileValidationResult(file, UploadRejectionReason.TooManyFiles, message));
@@ -78,6 +122,7 @@ namespace UploadBox.Services
                 }
 
                 fileResults.Add(validationResult);
+                acceptedCount++;
             }
 
             return fileResults.ToArray();
@@ -110,7 +155,7 @@ namespace UploadBox.Services
             int acceptedCount = fileResults.Count(file => file.IsAccepted);
             string message = CreateValidationMessage(files.Count, acceptedCount, fileResults, isBlocked);
 
-            return new UploadValidationResult(fileResults.ToArray(), isBlocked, message);
+            return new UploadValidationResult(fileResults, isBlocked, message);
         }
 
         private async Task<StageResult> StageUploadFileAsync(UploadContext context, CancellationToken cancellationToken)
@@ -146,7 +191,7 @@ namespace UploadBox.Services
 
                 await temporaryStream.FlushAsync(cancellationToken);
 
-                if (totalRead != context.File.Size)
+                if (IsValidUploadSize(context.File, totalRead))
                     return new StageFailed(UploadFailureCode.SizeMismatch);
 
                 if (context.File.Size == 0)
@@ -213,9 +258,6 @@ namespace UploadBox.Services
 
             try
             {
-                if (!IsValidUploadSize(context.File, stagedFile))
-                    return CreateFailure(context.File.Name, UploadFailureCode.SizeMismatch);
-
                 if (!TryCommitTemporaryFile(context, stagedFile, out UploadFailureCode failureCode))
                     return CreateFailure(context.File.Name, failureCode);
 
@@ -227,51 +269,6 @@ namespace UploadBox.Services
                 if (!committed)
                     DeleteTemporaryFile(stagedFile.TemporaryPath);
             }
-        }
-
-        private bool IsValidUploadSize(IBrowserFile file, StageReady stagedFile)
-        {
-            return stagedFile.BytesWritten == file.Size;
-        }
-
-        private bool IsValidUploadFile(IBrowserFile file, string fileName, out UploadFileResult invalidResult)
-        {
-            UploadFileValidationResult validationResult = GetFileValidationResult(file);
-
-            if (validationResult.IsAccepted)
-            {
-                invalidResult = null!;
-                return true;
-            }
-
-            UploadFailureCode code = validationResult.Reason switch
-            {
-                UploadRejectionReason.InvalidExtension => UploadFailureCode.InvalidExtension,
-                UploadRejectionReason.FileTooLarge => UploadFailureCode.FileTooLarge,
-                _ => UploadFailureCode.TransferFailed
-            };
-
-            invalidResult = CreateFailure(file.Name, code);
-            return false;
-        }
-
-        private bool IsStagedSuccess(UploadContext context, StageResult stageResult, out UploadFileResult result)
-        {
-            if (stageResult is StageReady)
-            {
-                result = null!;
-                return true;
-            }
-
-            if (stageResult is StageCancelled)
-            {
-                result = CreateCancelledResult(context.File.Name);
-                return false;
-            }
-
-            StageFailed failure = (StageFailed)stageResult;
-            result = CreateFailure(context.File.Name, failure.Code);
-            return false;
         }
 
         public async Task<UploadFileResult> WriteUploadFile(IBrowserFile file, string fileName, string fullDirectoryPath, CancellationToken cancellationToken)
