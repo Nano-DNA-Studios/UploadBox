@@ -154,7 +154,6 @@ namespace UploadBox.Services
 
                 stagingSucceeded = true;
                 return new StageReady(temporaryPath, totalRead);
-                //return new UploadSucceeded(temporaryPath, totalRead);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -171,51 +170,13 @@ namespace UploadBox.Services
             }
         }
 
-        //private bool TryCommitTemporaryFile(UploadContext context, StagedUploadFile stagedUpload, out Exception? error)
-        //{
-        //    if (!File.Exists(stagedUpload.TemporaryPath))
-        //    {
-        //        error = new FileNotFoundException("The staged upload file no longer exists.", stagedUpload.TemporaryPath);
-        //        return false;
-        //    }
-
-        //    if (context.WasOverwritten)
-        //    {
-        //        if (!File.Exists(context.DestinationPath))
-        //        {
-        //            error = new FileNotFoundException("The destination file no longer exists.", context.DestinationPath);
-        //            return false;
-        //        }
-
-        //        File.Replace(stagedUpload.TemporaryPath, context.DestinationPath, destinationBackupFileName: null);
-        //    }
-        //    else
-        //    {
-        //        if (File.Exists(context.DestinationPath))
-        //        {
-        //            error = new IOException($"The destination file already exists: {context.DestinationPath}");
-        //            return false;
-        //        }
-
-        //        File.Move(stagedUpload.TemporaryPath, context.DestinationPath);
-        //    }
-
-        //    context.StagedUpload = stagedUpload;
-        //    context.WasCommitted = true;
-        //    error = null;
-        //    return true;
-        //}
-
         private bool TryCommitTemporaryFile(UploadContext context, StageReady stagedFile, out UploadFailureCode failureCode)
         {
             try
             {
                 if (context.WasOverwritten)
                 {
-                    File.Replace(
-                        stagedFile.TemporaryPath,
-                        context.DestinationPath,
-                        destinationBackupFileName: null);
+                    File.Replace(stagedFile.TemporaryPath, context.DestinationPath, destinationBackupFileName: null);
                 }
                 else
                 {
@@ -268,36 +229,10 @@ namespace UploadBox.Services
             }
         }
 
-        //private bool IsValidUploadSize(UploadContext context, StagedUploadFile stagedUpload, out Exception error)
-        //{
-        //    if (stagedUpload.BytesWritten == context.File.Size)
-        //    {
-        //        error = null!;
-        //        return true;
-        //    }
-
-        //    error = new InvalidDataException($"The uploaded byte count ({stagedUpload.BytesWritten}) did not match the expected byte count ({context.File.Size}).");
-        //    return false;
-        //}
-
         private bool IsValidUploadSize(IBrowserFile file, StageReady stagedFile)
         {
             return stagedFile.BytesWritten == file.Size;
         }
-
-        //private bool IsValidUploadFile(IBrowserFile file, string fileName, out UploadFileResult invalidResult)
-        //{
-        //    UploadFileValidationResult validationResult = GetFileValidationResult(file);
-
-        //    if (!validationResult.IsAccepted)
-        //    {
-        //        invalidResult = CreateStandaloneErrorResult(file, fileName, validationResult.Message);
-        //        return false;
-        //    }
-
-        //    invalidResult = null!;
-        //    return true;
-        //}
 
         private bool IsValidUploadFile(IBrowserFile file, string fileName, out UploadFileResult invalidResult)
         {
@@ -320,24 +255,6 @@ namespace UploadBox.Services
             return false;
         }
 
-
-        //private bool IsStagedSuccess(UploadContext context, StagedUploadFile stagedUpload, out UploadFileResult invalidResult)
-        //{
-        //    bool isValidatedUpload = true;
-        //    invalidResult = null!;
-
-        //    if (stagedUpload.Exception != null)
-        //    {
-        //        isValidatedUpload = false;
-        //        invalidResult = CreateErrorResult(context, stagedUpload.Exception);
-        //    }
-
-        //    if (!isValidatedUpload)
-        //        DeleteTemporaryFile(stagedUpload.TemporaryPath);
-
-        //    return isValidatedUpload;
-        //}
-
         private bool IsStagedSuccess(UploadContext context, StageResult stageResult, out UploadFileResult result)
         {
             if (stageResult is StageReady)
@@ -357,29 +274,6 @@ namespace UploadBox.Services
             return false;
         }
 
-        //private bool IsValidatedUpload(UploadContext context, Stage stagedUpload, out UploadFileResult invalidResult)
-        //{
-        //    bool isValidatedUpload = true;
-        //    invalidResult = null!;
-
-        //    if (!IsStagedSuccess(context, stagedUpload, out UploadFileResult stagedInvalidResult))
-        //    {
-        //        invalidResult = stagedInvalidResult;
-        //        return false;
-        //    }
-
-        //    if (!TryCommitTemporaryFile(context, stagedUpload, out Exception? commitError))
-        //    {
-        //        isValidatedUpload = false;
-        //        invalidResult = CreateFailure(context.StagedUpload.TemporaryPath, )
-        //    }
-
-        //    if (!isValidatedUpload)
-        //        DeleteTemporaryFile(context.StagedUpload.TemporaryPath);
-
-        //    return isValidatedUpload;
-        //}
-
         public async Task<UploadFileResult> WriteUploadFile(IBrowserFile file, string fileName, string fullDirectoryPath, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -396,7 +290,8 @@ namespace UploadBox.Services
             if (!IsValidUploadFile(file, safeFileName, out UploadFileResult invalidResult))
                 return invalidResult;
 
-            Directory.CreateDirectory(fullDirectoryPath);
+            if (!Directory.Exists(fullDirectoryPath))
+                Directory.CreateDirectory(fullDirectoryPath);
 
             UploadContext context = UploadContext.NewContext(file, safeFileName, fullDirectoryPath);
             BeginUpload($"Uploading '{file.Name}'.");
@@ -407,36 +302,7 @@ namespace UploadBox.Services
                 return failure;
 
             return CommitValidatedUpload(context, (StageReady)stagedResult);
-
-            //if (!IsValidatedUpload(context, stagedUpload, out UploadFileResult invalidatedResult))
-            //    return invalidatedResult;
-
-            //CompleteUpload($"Uploaded '{file.Name}'.");
-
-            //return UploadFileResult.Success(context, stagedUpload);
         }
-
-        //private UploadFileResult CreateStandaloneCancelledResult(IBrowserFile file, string safeFileName)
-        //{
-        //    UploadFile uploadFile = new UploadFile(file.Name, safeFileName, string.Empty);
-        //    UploadFileStats stats = new UploadFileStats(0, false);
-        //    string message = $"Upload of '{file.Name}' was cancelled.";
-
-        //    CancelUpload(message);
-
-        //    return new UploadFileResult(uploadFile, UploadFileResultStatus.Cancelled, stats, message);
-        //}
-
-        //private UploadFileResult CreateStandaloneErrorResult(IBrowserFile file, string safeFileName, string message)
-        //{
-        //    UploadFile uploadFile = new UploadFile(file.Name, safeFileName, string.Empty);
-        //    UploadFileStats stats = new UploadFileStats(0, false);
-        //    string errorMessage = $"Upload failed for '{file.Name}': {message}";
-
-        //    FailUpload(errorMessage);
-
-        //    return new UploadFileResult(uploadFile, UploadFileResultStatus.Error, stats, errorMessage);
-        //}
 
         private UploadCancelled CreateCancelledResult(string fileName)
         {
@@ -481,34 +347,6 @@ namespace UploadBox.Services
 
             return new UploadSucceeded(file, stats);
         }
-
-        //private UploadFileResult CreateCancelledResult(UploadContext context)
-        //{
-        //    string message = $"Upload of '{context.File.Name}' was cancelled.";
-
-        //    CancelUpload(message);
-
-        //    return UploadFileResult.Failed(context, UploadFileResultStatus.Cancelled, message);
-        //}
-
-        //Need to remove the exception, we can just do a message? Otherwise we just need to throw it at the end
-        //private UploadFileResult CreateErrorResult(UploadContext context, Exception exception)
-        //{
-        //    string message = $"Upload failed for '{context.File.Name}': {exception.Message}";
-
-        //    FailUpload(message);
-
-        //    return UploadFileResult.Failed(context, UploadFileResultStatus.Error, message);
-        //}
-
-
-        //public void MarkFilesSelected(int fileCount)
-        //{
-        //    StatusMessage = fileCount > 0 ? $"{fileCount} file(s) selected." : "No files were selected.";
-        //    Status = fileCount > 0 ? UploadBoxStatus.FileSelected : UploadBoxStatus.Error;
-        //    Progress = null;
-        //    NotifyStateChanged();
-        //}
 
         public void MarkFilesSelected(int fileCount)
         {

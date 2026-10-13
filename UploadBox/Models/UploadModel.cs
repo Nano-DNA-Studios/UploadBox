@@ -74,33 +74,6 @@ namespace UploadBox.Models
 
     public sealed record UploadFileStats(long BytesWritten, bool WasOverwritten);
 
-    //public sealed record UploadFileResult(UploadFile UploadFile, UploadFileResultStatus Status, UploadFileStats Stats, string? ErrorMessage = null)
-    //{
-    //    public bool IsCancelled => Status == UploadFileResultStatus.Cancelled;
-
-    //    public bool IsSuccess => Status == UploadFileResultStatus.Success;
-
-    //    public bool IsError => Status == UploadFileResultStatus.Error;
-
-    //    public static UploadFileResult Failed(UploadContext context, UploadFileResultStatus status, string message)
-    //    {
-    //        long bytesWritten = context.StagedUpload?.BytesWritten ?? 0;
-    //        UploadFile uploadFile = new UploadFile(context.File.Name, context.SafeFileName, string.Empty);
-    //        UploadFileStats stats = new UploadFileStats(bytesWritten, context.WasOverwritten);
-
-    //        return new UploadFileResult(uploadFile, status, stats, message);
-    //    }
-
-    //    public static UploadFileResult Success(UploadContext context, StagedUploadFile stagedUpload)
-    //    {
-    //        long bytesWritten = context.StagedUpload?.BytesWritten ?? 0;
-    //        UploadFile uploadFile = new UploadFile(context.File.Name, context.SafeFileName, string.Empty);
-    //        UploadFileStats stats = new UploadFileStats(bytesWritten, context.WasOverwritten);
-
-    //        return new UploadFileResult(uploadFile, UploadFileResultStatus.Success, stats, null);
-    //    }
-    //}
-
     public sealed record StagedUploadFile(string TemporaryPath, long BytesWritten, Exception? Exception);
 
     public sealed class UploadContext
@@ -136,28 +109,6 @@ namespace UploadBox.Models
             return new UploadContext(file, safeFileName, destinationPath, wasOverwritten);
         }
     }
-
-    //public abstract record UploadFileResult;
-
-    //public sealed record UploadSucceeded(
-    //    string SavedFileName,
-    //    long BytesWritten
-    //    //bool WasOverwritten
-    //    ) : UploadFileResult;
-
-    //public sealed record UploadCancelled : UploadFileResult;
-
-    //public sealed record UploadFailed(
-    //    UploadFailureCode Code,
-    //    string UserMessage) : UploadFileResult;
-
-    //public enum UploadFailureCode
-    //{
-    //    ReadFailed,
-    //    WriteFailed,
-    //    DestinationConflict,
-    //    SizeMismatch
-    //}
 
     internal abstract record StageResult;
 
