@@ -28,10 +28,16 @@ namespace UploadBox.Models
         public UploadOptions(int maxFileCount = 1, long maxFileSizeBytes = DEFAULT_MAX_FILE_SIZE_BYTES, UploadPolicy policy = UploadPolicy.Strict, string? fileExtension = null, int bufferSize = DEFAULT_BUFFER_SIZE)
         {
             if (maxFileCount < 1)
-                maxFileCount = 1;
+                throw new ArgumentOutOfRangeException(nameof(maxFileCount));
 
             if (maxFileSizeBytes <= 0)
-                maxFileSizeBytes = DEFAULT_MAX_FILE_SIZE_BYTES;
+                throw new ArgumentOutOfRangeException(nameof(maxFileSizeBytes));
+
+            if (bufferSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize));
+
+            if (!Enum.IsDefined(policy))
+                throw new ArgumentOutOfRangeException(nameof(policy));
 
             MaxFileCount = maxFileCount;
             MaxFileSizeBytes = maxFileSizeBytes;

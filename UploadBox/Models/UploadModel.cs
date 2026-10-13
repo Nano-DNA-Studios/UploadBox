@@ -74,14 +74,32 @@ namespace UploadBox.Models
 
     public sealed record UploadFileStats(long BytesWritten, bool WasOverwritten);
 
-    public sealed record UploadFileResult(UploadFile UploadFile, UploadFileResultStatus Status, UploadFileStats Stats, string? ErrorMessage = null)
-    {
-        public bool IsCancelled => Status == UploadFileResultStatus.Cancelled;
+    //public sealed record UploadFileResult(UploadFile UploadFile, UploadFileResultStatus Status, UploadFileStats Stats, string? ErrorMessage = null)
+    //{
+    //    public bool IsCancelled => Status == UploadFileResultStatus.Cancelled;
 
-        public bool IsSuccess => Status == UploadFileResultStatus.Success;
+    //    public bool IsSuccess => Status == UploadFileResultStatus.Success;
 
-        public bool IsError => Status == UploadFileResultStatus.Error;
-    }
+    //    public bool IsError => Status == UploadFileResultStatus.Error;
+
+    //    public static UploadFileResult Failed(UploadContext context, UploadFileResultStatus status, string message)
+    //    {
+    //        long bytesWritten = context.StagedUpload?.BytesWritten ?? 0;
+    //        UploadFile uploadFile = new UploadFile(context.File.Name, context.SafeFileName, string.Empty);
+    //        UploadFileStats stats = new UploadFileStats(bytesWritten, context.WasOverwritten);
+
+    //        return new UploadFileResult(uploadFile, status, stats, message);
+    //    }
+
+    //    public static UploadFileResult Success(UploadContext context, StagedUploadFile stagedUpload)
+    //    {
+    //        long bytesWritten = context.StagedUpload?.BytesWritten ?? 0;
+    //        UploadFile uploadFile = new UploadFile(context.File.Name, context.SafeFileName, string.Empty);
+    //        UploadFileStats stats = new UploadFileStats(bytesWritten, context.WasOverwritten);
+
+    //        return new UploadFileResult(uploadFile, UploadFileResultStatus.Success, stats, null);
+    //    }
+    //}
 
     public sealed record StagedUploadFile(string TemporaryPath, long BytesWritten, Exception? Exception);
 
@@ -95,7 +113,7 @@ namespace UploadBox.Models
 
         public bool WasOverwritten { get; }
 
-        public StagedUploadFile? StagedUpload { get; set; }
+        public StagedUploadFile StagedUpload { get; set; }
 
         public bool WasCommitted { get; set; }
 
@@ -105,6 +123,76 @@ namespace UploadBox.Models
             SafeFileName = safeFileName;
             DestinationPath = destinationPath;
             WasOverwritten = wasOverwritten;
+
+            StagedUpload = new StagedUploadFile(string.Empty, 0, null);
         }
+
+        public static UploadContext NewContext(IBrowserFile file, string safeFileName, string directoryPath)
+        {
+            string fullDirectoryPath = Path.GetFullPath(directoryPath);
+            string destinationPath = Path.Combine(fullDirectoryPath, safeFileName);
+            bool wasOverwritten = System.IO.File.Exists(destinationPath);
+
+            return new UploadContext(file, safeFileName, destinationPath, wasOverwritten);
+        }
+    }
+
+    //public abstract record UploadFileResult;
+
+    //public sealed record UploadSucceeded(
+    //    string SavedFileName,
+    //    long BytesWritten
+    //    //bool WasOverwritten
+    //    ) : UploadFileResult;
+
+    //public sealed record UploadCancelled : UploadFileResult;
+
+    //public sealed record UploadFailed(
+    //    UploadFailureCode Code,
+    //    string UserMessage) : UploadFileResult;
+
+    //public enum UploadFailureCode
+    //{
+    //    ReadFailed,
+    //    WriteFailed,
+    //    DestinationConflict,
+    //    SizeMismatch
+    //}
+
+    internal abstract record StageResult;
+
+    internal sealed record StageReady(
+        string TemporaryPath,
+        long BytesWritten) : StageResult;
+
+    internal sealed record StageCancelled : StageResult;
+
+    internal sealed record StageFailed(
+        UploadFailureCode Code,
+        Exception? Cause = null) : StageResult;
+
+    public abstract record UploadFileResult;
+
+    public sealed record UploadSucceeded(
+        UploadFile File,
+        UploadFileStats Stats) : UploadFileResult;
+
+    public sealed record UploadCancelled(
+        string FileName) : UploadFileResult;
+
+    public sealed record UploadFailed(
+        string FileName,
+        UploadFailureCode Code,
+        string UserMessage) : UploadFileResult;
+
+    public enum UploadFailureCode
+    {
+        InvalidFileName,
+        InvalidExtension,
+        FileTooLarge,
+        SizeMismatch,
+        TransferFailed,
+        DestinationConflict,
+        DestinationUnavailable
     }
 }
