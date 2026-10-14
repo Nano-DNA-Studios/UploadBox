@@ -6,7 +6,7 @@
 
 <label class="upload-drop-zone flex-fill @(IsDragOver ? "drag-over" : "")" @ondragenter="HandleDragEnter" @ondragleave="HandleDragLeave" @ondragover:preventDefault @ondrop="HandleDrop">
     <InputFile class="upload-input" OnChange="HandleFileUpload" disabled="@Controller.IsUploading" multiple="@Controller.Options.AllowMultipleFiles" />
-    <span class="upload-title">Drop an OS image here</span>
+    <span class="upload-title">Drop @(Controller.Options.AllowMultipleFiles ? "files" : "a file") here</span>
     <span class="upload-subtitle">or click to browse</span>
 </label>
 
