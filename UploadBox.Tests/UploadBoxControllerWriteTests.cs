@@ -34,6 +34,54 @@ public class UploadBoxControllerWriteTests
     }
 
     [Test]
+    public async Task WriteUploadFile_WithBatchContext_ReportsFileAndAggregateProgress()
+    {
+        using TemporaryDirectory directory = new();
+        UploadBoxController controller = new(new UploadOptions(bufferSize: 1));
+        List<UploadProgress> progressUpdates = [];
+        controller.StateChanged += (_, _) =>
+        {
+            if (controller.Progress is UploadProgress progress)
+                progressUpdates.Add(progress);
+        };
+        UploadBatchProgressContext context = new(2, 3, 4, 10);
+
+        UploadFileResult result = await controller.WriteUploadFile(
+            TestUpload.ExactLimitIso,
+            "two.iso",
+            directory.Path,
+            context,
+            CancellationToken.None);
+
+        Assert.That(result, Is.TypeOf<UploadSucceeded>());
+        Assert.That(progressUpdates, Is.Not.Empty);
+        Assert.Multiple(() =>
+        {
+            Assert.That(progressUpdates.All(progress => progress.FileIndex == 2 && progress.FileCount == 3), Is.True);
+            Assert.That(progressUpdates.Take(2).Select(progress => progress.BytesTransferred), Is.EqualTo(new long[] { 1, 2 }));
+            Assert.That(progressUpdates.Take(2).Select(progress => progress.TotalBytesTransferred), Is.EqualTo(new long[] { 5, 6 }));
+            Assert.That(progressUpdates.All(progress => progress.TotalSizeBytes == 10 && progress.FileSizeBytes == 2), Is.True);
+            Assert.That(progressUpdates[^1].GetFilePercentage(), Is.EqualTo(100));
+            Assert.That(progressUpdates[^1].GetOverallPercentage(), Is.EqualTo(60));
+        });
+    }
+
+    [Test]
+    public async Task WriteUploadFile_WithBatchContext_RejectsTotalSmallerThanCurrentFileAndOffset()
+    {
+        using TemporaryDirectory directory = new();
+        UploadBoxController controller = new();
+        UploadBatchProgressContext context = new(2, 2, 3, 4);
+
+        Assert.ThrowsAsync<ArgumentException>(async () => await controller.WriteUploadFile(
+            TestUpload.SourceIso,
+            "two.iso",
+            directory.Path,
+            context,
+            CancellationToken.None));
+    }
+
+    [Test]
     public async Task WriteUploadFile_WritesNewFileAndReportsProgressAndCompletion()
     {
         using TemporaryDirectory directory = new();

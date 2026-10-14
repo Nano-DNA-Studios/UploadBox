@@ -158,7 +158,7 @@ namespace UploadBox.Services
             return new UploadValidationResult(fileResults, isBlocked, message);
         }
 
-        private async Task<StageResult> StageUploadFileAsync(UploadContext context, CancellationToken cancellationToken)
+        private async Task<StageResult> StageUploadFileAsync(UploadContext context, UploadBatchProgressContext progressContext, CancellationToken cancellationToken)
         {
             string? directoryPath = Path.GetDirectoryName(context.DestinationPath);
             bool stagingSucceeded = false;
@@ -186,7 +186,7 @@ namespace UploadBox.Services
 
                     await temporaryStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
 
-                    ReportProgress(context.SafeFileName, totalRead, context.File.Size);
+                    ReportProgress(context.SafeFileName, totalRead, context.File.Size, progressContext);
                 }
 
                 await temporaryStream.FlushAsync(cancellationToken);
@@ -195,7 +195,7 @@ namespace UploadBox.Services
                     return new StageFailed(UploadFailureCode.SizeMismatch);
 
                 if (context.File.Size == 0)
-                    ReportProgress(context.SafeFileName, 0, 0);
+                    ReportProgress(context.SafeFileName, 0, 0, progressContext);
 
                 stagingSucceeded = true;
                 return new StageReady(temporaryPath, totalRead);
@@ -269,8 +269,14 @@ namespace UploadBox.Services
             }
         }
 
-        public async Task<UploadFileResult> WriteUploadFile(IBrowserFile file, string fileName, string fullDirectoryPath, CancellationToken cancellationToken)
+        public async Task<UploadFileResult> WriteUploadFile(IBrowserFile file, string fileName, string fullDirectoryPath, CancellationToken cancellationToken) => await WriteUploadFile(file, fileName, fullDirectoryPath, UploadBatchProgressContext.SingleFile(file.Size), cancellationToken);
+
+
+        public async Task<UploadFileResult> WriteUploadFile(IBrowserFile file, string fileName, string fullDirectoryPath, UploadBatchProgressContext progressContext, CancellationToken cancellationToken)
         {
+            //ArgumentNullException.ThrowIfNull(file);
+            //ArgumentNullException.ThrowIfNull(progressContext);
+
             if (cancellationToken.IsCancellationRequested)
                 return CreateCancelledResult(file.Name);
 
@@ -285,13 +291,16 @@ namespace UploadBox.Services
             if (!IsValidUploadFile(file, safeFileName, out UploadFileResult invalidResult))
                 return invalidResult;
 
+            if (file.Size > progressContext.TotalSizeBytes - progressContext.CompletedBytesBeforeCurrentFile)
+                throw new ArgumentException("The batch total size must include completed bytes and the current file.", nameof(progressContext));
+
             if (!Directory.Exists(fullDirectoryPath))
                 Directory.CreateDirectory(fullDirectoryPath);
 
             UploadContext context = UploadContext.NewContext(file, safeFileName, fullDirectoryPath);
             BeginUpload($"Uploading '{file.Name}'.");
 
-            StageResult stagedResult = await StageUploadFileAsync(context, cancellationToken);
+            StageResult stagedResult = await StageUploadFileAsync(context, progressContext, cancellationToken);
 
             if (!IsStagedSuccess(context, stagedResult, out UploadFileResult failure))
                 return failure;
@@ -399,9 +408,16 @@ namespace UploadBox.Services
             NotifyStateChanged();
         }
 
-        private void ReportProgress(string fileName, long bytesTransferred, long fileSizeBytes)
+        private void ReportProgress(string fileName, long bytesTransferred, long fileSizeBytes, UploadBatchProgressContext progressContext)
         {
-            UploadProgress update = new(fileName, 1, 1, bytesTransferred, fileSizeBytes, bytesTransferred, fileSizeBytes);
+            UploadProgress update = new(
+                fileName,
+                progressContext.FileIndex,
+                progressContext.FileCount,
+                bytesTransferred,
+                fileSizeBytes,
+                progressContext.CompletedBytesBeforeCurrentFile + bytesTransferred,
+                progressContext.TotalSizeBytes);
             UpdateProgress(update);
         }
 

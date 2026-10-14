@@ -89,6 +89,16 @@
                             <span class="result-details">
                                 <strong title="@item.FileName">@item.FileName</strong>
                                 <small>@FormatBytes(item.FileSize) · @item.Message</small>
+                                @if (AllowMultipleFiles && item.Progress is not null)
+                                {
+                                    <span class="file-progress" aria-label="Progress for @item.FileName">
+                                        <span class="file-progress-label">
+                                            <span>@FormatBytes(item.BytesTransferred) / @FormatBytes(item.FileSize)</span>
+                                            <span>@item.FilePercentage.ToString("0", CultureInfo.InvariantCulture)%</span>
+                                        </span>
+                                        <progress value="@item.FilePercentage" max="100" aria-label="@item.FileName upload progress"></progress>
+                                    </span>
+                                }
                             </span>
                             <span class="result-status @item.StatusClass">@item.Status</span>
                         </li>
@@ -141,12 +151,9 @@
     private bool _isProcessing;
     private bool _cancelRequested;
     private string? _currentFileName;
-    private long _currentFileSize;
-    private long _currentFileBytes;
+    private UploadDisplayItem? _currentUploadItem;
     private long _completedBytes;
     private long _batchTotalBytes;
-    private int _completedFileCount;
-    private int _acceptedFileCount;
     private double SelectedUploadProgress;
 
     private string UploadDirectory => Path.Combine(AppContext.BaseDirectory, "Upload");
@@ -203,11 +210,9 @@
         _uploadCancellation = new CancellationTokenSource();
         _uploadItems.Clear();
         _currentFileName = null;
-        _currentFileBytes = 0;
+        _currentUploadItem = null;
         _completedBytes = 0;
         _batchTotalBytes = 0;
-        _completedFileCount = 0;
-        _acceptedFileCount = 0;
         SelectedUploadProgress = 0;
 
         try
@@ -236,7 +241,6 @@
             }
 
             List<UploadFileValidationResult> acceptedFiles = validation.Files.Where(file => file.IsAccepted).ToList();
-            _acceptedFileCount = acceptedFiles.Count;
             _batchTotalBytes = acceptedFiles.Sum(file => file.FileSize);
             Directory.CreateDirectory(UploadDirectory);
             AddMessage($"Saving accepted files to {UploadDirectory}.", "info");
@@ -253,8 +257,9 @@
                 }
 
                 _currentFileName = fileResult.FileName;
-                _currentFileSize = fileResult.FileSize;
-                _currentFileBytes = 0;
+                _currentUploadItem = item;
+                item.SetProgress(new UploadProgress(fileResult.FileName, index + 1, acceptedFiles.Count, 0, fileResult.FileSize, _completedBytes, _batchTotalBytes));
+                SelectedUploadProgress = item.Progress!.GetOverallPercentage();
                 item.SetStatus("Uploading", "Transfer in progress.");
                 AddMessage($"Uploading '{fileResult.FileName}' ({FormatBytes(fileResult.FileSize)}).", "info");
 
@@ -269,6 +274,7 @@
                         fileResult.File,
                         Path.GetFileName(fileResult.FileName),
                         UploadDirectory,
+                        new UploadBatchProgressContext(index + 1, acceptedFiles.Count, _completedBytes, _batchTotalBytes),
                         _uploadCancellation.Token);
                 }
                 catch (OperationCanceledException) when (_uploadCancellation.Token.IsCancellationRequested)
@@ -281,8 +287,6 @@
                 catch (Exception exception)
                 {
                     item.SetStatus("Failed", exception.Message);
-                    _currentFileBytes = 0;
-                    UpdateAggregateProgress();
                     AddMessage($"Failed to upload '{fileResult.FileName}': {exception.Message}", "error");
                     continue;
                 }
@@ -291,10 +295,8 @@
                 {
                     item.SetStatus("Uploaded", $"Saved {FormatBytes(success.Stats.BytesWritten)}.");
                     _completedBytes += success.Stats.BytesWritten;
-                    _completedFileCount++;
-                    _currentFileBytes = 0;
+                    item.SetProgress(new UploadProgress(fileResult.FileName, index + 1, acceptedFiles.Count, success.Stats.BytesWritten, fileResult.FileSize, _completedBytes, _batchTotalBytes));
                     AddMessage($"Uploaded '{fileResult.FileName}' to '{success.File.SavedPath}'.", "success");
-                    UpdateAggregateProgress();
                     continue;
                 }
 
@@ -326,6 +328,7 @@
         {
             _isProcessing = false;
             _currentFileName = null;
+            _currentUploadItem = null;
             _uploadCancellation?.Dispose();
             _uploadCancellation = null;
             await InvokeAsync(StateHasChanged);
@@ -359,29 +362,16 @@
         {
             if (_isProcessing
                 && progress is not null
-                && _currentFileName is not null
+                && _currentUploadItem is not null
+                && progress.FileIndex == _currentUploadItem.Progress?.FileIndex
                 && string.Equals(Path.GetFileName(progress.FileName), Path.GetFileName(_currentFileName), StringComparison.OrdinalIgnoreCase))
             {
-                _currentFileBytes = Math.Min(progress.BytesTransferred, _currentFileSize);
-                UpdateAggregateProgress();
+                _currentUploadItem.SetProgress(progress);
+                SelectedUploadProgress = progress.GetOverallPercentage();
             }
 
             StateHasChanged();
         });
-    }
-
-    private void UpdateAggregateProgress()
-    {
-        if (_batchTotalBytes == 0)
-        {
-            SelectedUploadProgress = _acceptedFileCount == 0
-                ? 0
-                : _completedFileCount * 100d / _acceptedFileCount;
-        }
-        else
-        {
-            SelectedUploadProgress = Math.Clamp((_completedBytes + _currentFileBytes) * 100d / _batchTotalBytes, 0d, 100d);
-        }
     }
 
     private void AddMessage(string message, string kind)
@@ -419,6 +409,9 @@
         public long FileSize { get; } = fileSize;
         public string Status { get; private set; } = status;
         public string Message { get; private set; } = message;
+        public UploadProgress? Progress { get; private set; }
+        public long BytesTransferred => Progress?.BytesTransferred ?? 0;
+        public double FilePercentage => Progress?.GetFilePercentage() ?? 0;
         public string StatusClass => Status.ToLowerInvariant() switch
         {
             "uploaded" => "result-success",
@@ -441,6 +434,8 @@
             Status = newStatus;
             Message = newMessage;
         }
+
+        public void SetProgress(UploadProgress progress) => Progress = progress;
     }
 
     private sealed record ActivityMessage(string Timestamp, string Text, string KindClass);
