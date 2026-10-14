@@ -6,6 +6,34 @@ namespace UploadBox.Tests;
 public class UploadBoxControllerWriteTests
 {
     [Test]
+    public async Task WriteUploadFile_WhenCalledSequentially_WritesEveryFileAndReportsProgressForEach()
+    {
+        using TemporaryDirectory directory = new();
+        UploadBoxController controller = new(new UploadOptions(bufferSize: 1));
+        List<string> progressFileNames = [];
+        controller.StateChanged += (_, _) =>
+        {
+            if (controller.Progress is UploadProgress progress)
+                progressFileNames.Add(progress.FileName);
+        };
+
+        controller.MarkFilesSelected(2);
+        UploadFileResult firstResult = await controller.WriteUploadFile(TestUpload.OneByteIso, "one.iso", directory.Path, CancellationToken.None);
+        controller.MarkFilesSelected(2);
+        UploadFileResult secondResult = await controller.WriteUploadFile(TestUpload.TwoByteIso, "two.iso", directory.Path, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(firstResult, Is.TypeOf<UploadSucceeded>());
+            Assert.That(secondResult, Is.TypeOf<UploadSucceeded>());
+            Assert.That(File.ReadAllBytes(Path.Combine(directory.Path, "one.iso")), Is.EqualTo(new byte[] { 1 }));
+            Assert.That(File.ReadAllBytes(Path.Combine(directory.Path, "two.iso")), Is.EqualTo(new byte[] { 2 }));
+            Assert.That(progressFileNames, Does.Contain("one.iso"));
+            Assert.That(progressFileNames, Does.Contain("two.iso"));
+        });
+    }
+
+    [Test]
     public async Task WriteUploadFile_WritesNewFileAndReportsProgressAndCompletion()
     {
         using TemporaryDirectory directory = new();

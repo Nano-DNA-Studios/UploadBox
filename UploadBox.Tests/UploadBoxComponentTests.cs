@@ -17,17 +17,34 @@ public class UploadBoxComponentTests : Bunit.BunitContext
     }
 
     [Test]
-    public void Render_ShowsDropZoneAndConfiguresMultipleSelection()
+    public void Render_MultipleSelection_ShowsDropInstructionsAndEnablesMultipleFiles()
     {
         UploadBoxController controller = new(new UploadOptions(maxFileCount: 2));
 
         var cut = Render<UploadComponent>(parameters => parameters.Add(component => component.Controller, controller));
+        IElement input = cut.Find("input[type=file]");
 
         Assert.Multiple(() =>
         {
-            Assert.That(cut.Markup, Does.Contain("Drop an OS image here"));
+            Assert.That(cut.Markup, Does.Contain("Drop files here"));
             Assert.That(cut.Markup, Does.Contain("or click to browse"));
-            Assert.That(cut.Markup, Does.Contain("multiple"));
+            Assert.That(input.HasAttribute("multiple"), Is.True);
+        });
+    }
+
+    [Test]
+    public void Render_SingleSelection_ShowsDropInstructionsAndRestrictsToSingleFile()
+    {
+        UploadBoxController controller = new(new UploadOptions(maxFileCount: 1));
+
+        var cut = Render<UploadComponent>(parameters => parameters.Add(component => component.Controller, controller));
+        IElement input = cut.Find("input[type=file]");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(cut.Markup, Does.Contain("Drop a file here"));
+            Assert.That(cut.Markup, Does.Contain("or click to browse"));
+            Assert.That(input.HasAttribute("multiple"), Is.False);
         });
     }
 
