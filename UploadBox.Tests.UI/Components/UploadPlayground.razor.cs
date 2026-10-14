@@ -1,142 +1,15 @@
-@using System.Globalization
-@using Microsoft.AspNetCore.Components.Forms
-@using global::UploadBox.Models
-@using global::UploadBox.Services
-@using global::UploadBox.Pages
-@implements IDisposable
+using System.Globalization;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
+using global::UploadBox.Models;
+using global::UploadBox.Services;
+using global::UploadBox.Pages;
+using UploadBox.Tests.UI;
 
-<section class="upload-playground">
-    <header class="playground-header">
-        <p class="eyebrow">UploadBox visual playground</p>
-        <h1>@(AllowMultipleFiles ? "Multiple file upload" : "Single file upload")</h1>
-        <p class="playground-intro">
-            @(AllowMultipleFiles
-                ? "Choose a batch to see validation, per-file results, and aggregate progress. Files are uploaded one at a time."
-                : "Choose one file to see the upload interaction, progress updates, and final result.")
-        </p>
-    </header>
+namespace UploadBox.Tests.UI.Components;
 
-    <div class="playground-grid">
-        <section class="playground-card upload-card" aria-labelledby="upload-panel-title">
-            <div class="card-heading">
-                <div>
-                    <p class="eyebrow">Selection</p>
-                    <h2 id="upload-panel-title">Choose files</h2>
-                </div>
-                <span class="mode-badge">@(AllowMultipleFiles ? "Batch · up to 20" : "Single file")</span>
-            </div>
-
-            <UploadBox Controller="@Controller" UploadRequested="HandleUploadRequested" />
-
-            <div class="upload-limits">
-                <span>Maximum @MaxFileSizeLabel per file</span>
-                <span>Any file type</span>
-            </div>
-
-            <div class="destination-panel">
-                <span class="destination-label">Server save folder</span>
-                <code>@UploadDirectory</code>
-                <small>Files with the same name replace the existing file.</small>
-            </div>
-
-            <div class="actions-row">
-                <div class="state-summary">
-                    <span class="status-dot @StatusClass"></span>
-                    <span>@StatusText</span>
-                </div>
-                <button class="cancel-button" type="button" @onclick="CancelUpload" disabled="@(!_isProcessing || _cancelRequested)">
-                    @(_cancelRequested ? "Cancelling…" : "Cancel upload")
-                </button>
-            </div>
-
-            <div class="app-progress-row" style="width:100%;">
-                <div class="app-progress-label">
-                    <span>Overall Upload Progress</span>
-                    <span>@SelectedUploadProgress.ToString("0", CultureInfo.InvariantCulture)%</span>
-                </div>
-                <progress class="w-100" value="@SelectedUploadProgress" max="100"></progress>
-            </div>
-
-            @if (_currentFileName is not null && _isProcessing)
-            {
-                <p class="current-file">Current file: <strong>@_currentFileName</strong></p>
-            }
-        </section>
-
-        <section class="playground-card results-card" aria-labelledby="results-title">
-            <div class="card-heading">
-                <div>
-                    <p class="eyebrow">Results</p>
-                    <h2 id="results-title">Files in this session</h2>
-                </div>
-                <span class="result-count">@_uploadItems.Count</span>
-            </div>
-
-            @if (_uploadItems.Count == 0)
-            {
-                <div class="empty-state">
-                    <span class="empty-state-icon" aria-hidden="true">⇧</span>
-                    <p>Your selected files and their results will appear here.</p>
-                </div>
-            }
-            else
-            {
-                <ul class="upload-results">
-                    @foreach (UploadDisplayItem item in _uploadItems)
-                    {
-                        <li class="upload-result">
-                            <span class="result-icon @item.StatusClass" aria-hidden="true">@item.StatusIcon</span>
-                            <span class="result-details">
-                                <strong title="@item.FileName">@item.FileName</strong>
-                                <small>@FormatBytes(item.FileSize) · @item.Message</small>
-                                @if (AllowMultipleFiles && item.Progress is not null)
-                                {
-                                    <span class="file-progress" aria-label="Progress for @item.FileName">
-                                        <span class="file-progress-label">
-                                            <span>@FormatBytes(item.BytesTransferred) / @FormatBytes(item.FileSize)</span>
-                                            <span>@item.FilePercentage.ToString("0", CultureInfo.InvariantCulture)%</span>
-                                        </span>
-                                        <progress value="@item.FilePercentage" max="100" aria-label="@item.FileName upload progress"></progress>
-                                    </span>
-                                }
-                            </span>
-                            <span class="result-status @item.StatusClass">@item.Status</span>
-                        </li>
-                    }
-                </ul>
-            }
-        </section>
-
-        <section class="playground-card activity-card" aria-labelledby="activity-title">
-            <div class="card-heading">
-                <div>
-                    <p class="eyebrow">Activity</p>
-                    <h2 id="activity-title">Process messages</h2>
-                </div>
-                <span class="result-count">@_messages.Count</span>
-            </div>
-
-            @if (_messages.Count == 0)
-            {
-                <p class="activity-empty">Messages from selection through completion will be collected here.</p>
-            }
-            else
-            {
-                <ol class="activity-log" aria-live="polite" aria-relevant="additions text">
-                    @foreach (ActivityMessage message in _messages)
-                    {
-                        <li class="activity-message @message.KindClass">
-                            <time>@message.Timestamp</time>
-                            <span>@message.Text</span>
-                        </li>
-                    }
-                </ol>
-            }
-        </section>
-    </div>
-</section>
-
-@code {
+public partial class UploadPlayground : IDisposable
+{
     private const long MaxFileSizeBytes = 512L * 1024 * 1024;
     private const int MaxBatchFileCount = 20;
     private const int UploadBufferSize = 128 * 1024;
@@ -263,7 +136,6 @@
                 item.SetStatus("Uploading", "Transfer in progress.");
                 AddMessage($"Uploading '{fileResult.FileName}' ({FormatBytes(fileResult.FileSize)}).", "info");
 
-                // Clear the previous file's progress before the controller starts the next transfer.
                 Controller.MarkFilesSelected(acceptedFiles.Count);
                 await InvokeAsync(StateHasChanged);
 
@@ -379,19 +251,7 @@
         _messages.Add(new ActivityMessage(DateTimeOffset.Now.ToString("HH:mm:ss.fff", CultureInfo.CurrentCulture), message, kind));
     }
 
-    private static string FormatBytes(long bytes)
-    {
-        string[] sizes = ["B", "KB", "MB", "GB"];
-        double value = bytes;
-        int sizeIndex = 0;
-        while (value >= 1024 && sizeIndex < sizes.Length - 1)
-        {
-            value /= 1024;
-            sizeIndex++;
-        }
-
-        return $"{value:0.##} {sizes[sizeIndex]}";
-    }
+    private static string FormatBytes(long bytes) => UploadPlaygroundFormatting.FormatBytes(bytes);
 
     public void Dispose()
     {
@@ -402,41 +262,6 @@
         _uploadCancellation?.Dispose();
     }
 
-    private sealed class UploadDisplayItem(IBrowserFile file, string fileName, long fileSize, string status, string message)
-    {
-        public IBrowserFile File { get; } = file;
-        public string FileName { get; } = fileName;
-        public long FileSize { get; } = fileSize;
-        public string Status { get; private set; } = status;
-        public string Message { get; private set; } = message;
-        public UploadProgress? Progress { get; private set; }
-        public long BytesTransferred => Progress?.BytesTransferred ?? 0;
-        public double FilePercentage => Progress?.GetFilePercentage() ?? 0;
-        public string StatusClass => Status.ToLowerInvariant() switch
-        {
-            "uploaded" => "result-success",
-            "failed" or "rejected" or "blocked" => "result-error",
-            "cancelled" or "skipped" => "result-cancelled",
-            "uploading" => "result-active",
-            _ => "result-idle"
-        };
-        public string StatusIcon => Status switch
-        {
-            "Uploaded" => "✓",
-            "Failed" or "Rejected" or "Blocked" => "!",
-            "Cancelled" or "Skipped" => "–",
-            "Uploading" => "↗",
-            _ => "•"
-        };
-
-        public void SetStatus(string newStatus, string newMessage)
-        {
-            Status = newStatus;
-            Message = newMessage;
-        }
-
-        public void SetProgress(UploadProgress progress) => Progress = progress;
-    }
-
-    private sealed record ActivityMessage(string Timestamp, string Text, string KindClass);
 }
+
+

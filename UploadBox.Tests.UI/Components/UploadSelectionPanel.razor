@@ -1,0 +1,92 @@
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Forms
+@using global::UploadBox.Models
+@using global::UploadBox.Services
+@using global::UploadBox.Pages
+
+<section class="playground-card upload-card" aria-labelledby="upload-panel-title">
+    <div class="card-heading">
+        <div>
+            <p class="eyebrow">Selection</p>
+            <h2 id="upload-panel-title">Choose files</h2>
+        </div>
+        <span class="mode-badge">@(AllowMultipleFiles ? "Batch · up to 20" : "Single file")</span>
+    </div>
+
+    <UploadBox Controller="@Controller" UploadRequested="@UploadRequested" />
+
+    <div class="upload-limits">
+        <span>Maximum @MaxFileSizeLabel per file</span>
+        <span>Any file type</span>
+    </div>
+
+    <div class="destination-panel">
+        <span class="destination-label">Server save folder</span>
+        <code>@UploadDirectory</code>
+        <small>Files with the same name replace the existing file.</small>
+    </div>
+
+    <div class="actions-row">
+        <div class="state-summary">
+            <span class="status-dot @StatusClass"></span>
+            <span>@StatusText</span>
+        </div>
+        <button class="cancel-button" type="button" @onclick="CancelUpload" disabled="@(!IsProcessing || CancelRequested)">
+            @(CancelRequested ? "Cancelling…" : "Cancel upload")
+        </button>
+    </div>
+
+    <div class="app-progress-row" style="width:100%;">
+        <div class="app-progress-label">
+            <span>Overall Upload Progress</span>
+            <span>@SelectedUploadProgress.ToString("0", CultureInfo.InvariantCulture)%</span>
+        </div>
+        <progress class="w-100" value="@SelectedUploadProgress" max="100"></progress>
+    </div>
+
+    @if (CurrentFileName is not null && IsProcessing)
+    {
+        <p class="current-file">Current file: <strong>@CurrentFileName</strong></p>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public UploadBoxController Controller { get; set; } = null!;
+
+    [Parameter]
+    public bool AllowMultipleFiles { get; set; }
+
+    [Parameter]
+    public EventCallback<UploadRequest> UploadRequested { get; set; }
+
+    [Parameter]
+    public string MaxFileSizeLabel { get; set; } = string.Empty;
+
+    [Parameter]
+    public string UploadDirectory { get; set; } = string.Empty;
+
+    [Parameter]
+    public string StatusClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public string StatusText { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsProcessing { get; set; }
+
+    [Parameter]
+    public bool CancelRequested { get; set; }
+
+    [Parameter]
+    public EventCallback CancelUpload { get; set; }
+
+    [Parameter]
+    public double SelectedUploadProgress { get; set; }
+
+    [Parameter]
+    public string? CurrentFileName { get; set; }
+}
+
+
+
