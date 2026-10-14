@@ -67,7 +67,7 @@ public class UploadBoxControllerWriteTests
     }
 
     [Test]
-    public async Task WriteUploadFile_WithBatchContext_RejectsTotalSmallerThanCurrentFileAndOffset()
+    public void WriteUploadFile_WithBatchContext_RejectsTotalSmallerThanCurrentFileAndOffset()
     {
         using TemporaryDirectory directory = new();
         UploadBoxController controller = new();

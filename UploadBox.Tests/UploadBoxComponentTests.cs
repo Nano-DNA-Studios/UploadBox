@@ -8,7 +8,7 @@ using UploadComponent = UploadBox.Pages.UploadBox;
 
 namespace UploadBox.Tests;
 
-public class UploadBoxComponentTests : Bunit.BunitContext
+public class UploadBoxComponentTests : BunitContext
 {
     [Test]
     public void Render_RequiresControllerParameter()
