@@ -8,7 +8,7 @@ public class UploadModelTests
     [Test]
     public void UploadRequest_ExposesFilesAndCount()
     {
-        IBrowserFile[] files = [new TestBrowserFile("one.iso", [1]), new TestBrowserFile("two.iso", [2])];
+        IBrowserFile[] files = [TestUpload.OneByteIso, TestUpload.TwoByteIso];
         UploadRequest request = new(files);
 
         Assert.That(request.Files, Is.SameAs((IReadOnlyList<IBrowserFile>)files));
@@ -22,7 +22,7 @@ public class UploadModelTests
     [TestCase(UploadRejectionReason.InvalidExtension, false)]
     public void UploadFileValidationResult_MapsReasonToAcceptance(UploadRejectionReason reason, bool accepted)
     {
-        IBrowserFile file = new TestBrowserFile("disk.iso", [1, 2, 3]);
+        IBrowserFile file = TestUpload.ValidIso;
         UploadFileValidationResult result = new(file, reason, "message");
 
         Assert.Multiple(() =>
@@ -42,7 +42,7 @@ public class UploadModelTests
     public void UploadValidationResult_CanUploadRequiresUnblockedAcceptedFile(bool blocked, bool accepted, bool expected)
     {
         UploadFileValidationResult[] results = accepted
-            ? [new(new TestBrowserFile("disk.iso", [1]), UploadRejectionReason.None, string.Empty)]
+            ? [new(TestUpload.OneByteIso, UploadRejectionReason.None, string.Empty)]
             : [];
         UploadValidationResult result = new(results, blocked, "summary");
 
@@ -55,7 +55,7 @@ public class UploadModelTests
         using TemporaryDirectory directory = new();
         string destination = Path.Combine(directory.Path, "disk.iso");
         File.WriteAllText(destination, "existing");
-        IBrowserFile file = new TestBrowserFile("source.iso", [1]);
+        IBrowserFile file = TestUpload.SourceIso;
 
         UploadContext context = UploadContext.NewContext(file, "disk.iso", directory.Path);
 
@@ -73,7 +73,7 @@ public class UploadModelTests
     {
         using TemporaryDirectory directory = new();
 
-        UploadContext context = UploadContext.NewContext(new TestBrowserFile("source.iso", []), "disk.iso", directory.Path);
+        UploadContext context = UploadContext.NewContext(TestUpload.EmptyIso, "disk.iso", directory.Path);
 
         Assert.That(context.WasOverwritten, Is.False);
     }

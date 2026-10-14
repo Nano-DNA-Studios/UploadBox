@@ -13,7 +13,7 @@ public class UploadBoxControllerWriteTests
         List<UploadBoxStatus> states = [];
         controller.StateChanged += (_, _) => states.Add(controller.Status);
 
-        UploadFileResult result = await controller.WriteUploadFile(new TestBrowserFile("source.iso", [1, 2, 3]), "saved.iso", directory.Path, CancellationToken.None);
+        UploadFileResult result = await controller.WriteUploadFile(TestUpload.SourceIso, "saved.iso", directory.Path, CancellationToken.None);
 
         UploadSucceeded success = result as UploadSucceeded ?? throw new AssertionException("Expected a successful upload.");
         Assert.Multiple(() =>
@@ -41,7 +41,7 @@ public class UploadBoxControllerWriteTests
         string destination = Path.Combine(parent, "nested");
         try
         {
-            UploadFileResult result = await new UploadBoxController().WriteUploadFile(new TestBrowserFile("a.iso", [9]), "a.iso", destination, CancellationToken.None);
+            UploadFileResult result = await new UploadBoxController().WriteUploadFile(TestUpload.NineByteIso, "a.iso", destination, CancellationToken.None);
 
             Assert.That(result, Is.TypeOf<UploadSucceeded>());
             Assert.That(File.ReadAllBytes(Path.Combine(destination, "a.iso")), Is.EqualTo(new byte[] { 9 }));
@@ -60,7 +60,7 @@ public class UploadBoxControllerWriteTests
         string destination = Path.Combine(directory.Path, "saved.iso");
         File.WriteAllBytes(destination, [8, 8]);
 
-        UploadFileResult result = await new UploadBoxController().WriteUploadFile(new TestBrowserFile("new.iso", [1, 2, 3]), "saved.iso", directory.Path, CancellationToken.None);
+        UploadFileResult result = await new UploadBoxController().WriteUploadFile(TestUpload.SourceIso, "saved.iso", directory.Path, CancellationToken.None);
 
         Assert.Multiple(() =>
         {
@@ -80,7 +80,7 @@ public class UploadBoxControllerWriteTests
     {
         using TemporaryDirectory directory = new();
 
-        UploadFileResult result = await new UploadBoxController().WriteUploadFile(new TestBrowserFile("source.iso", [1]), fileName!, directory.Path, CancellationToken.None);
+        UploadFileResult result = await new UploadBoxController().WriteUploadFile(TestUpload.SourceOneByteIso, fileName!, directory.Path, CancellationToken.None);
 
         Assert.That(result, Is.EqualTo(new UploadFailed("source.iso", UploadFailureCode.InvalidFileName, "The file name is invalid.")));
     }
@@ -92,7 +92,7 @@ public class UploadBoxControllerWriteTests
     {
         UploadBoxController controller = new();
 
-        UploadFileResult result = await controller.WriteUploadFile(new TestBrowserFile("source.iso", [1]), "saved.iso", path, CancellationToken.None);
+        UploadFileResult result = await controller.WriteUploadFile(TestUpload.SourceOneByteIso, "saved.iso", path, CancellationToken.None);
 
         Assert.That(result, Is.TypeOf<UploadFailed>());
         Assert.That(((UploadFailed)result).Code, Is.EqualTo(UploadFailureCode.DestinationUnavailable));
@@ -105,7 +105,7 @@ public class UploadBoxControllerWriteTests
         using CancellationTokenSource cancellation = new();
         cancellation.Cancel();
 
-        UploadFileResult result = await new UploadBoxController().WriteUploadFile(new TestBrowserFile("source.iso", [1]), "saved.iso", directory.Path, cancellation.Token);
+        UploadFileResult result = await new UploadBoxController().WriteUploadFile(TestUpload.SourceOneByteIso, "saved.iso", directory.Path, cancellation.Token);
 
         Assert.Multiple(() =>
         {
@@ -121,7 +121,7 @@ public class UploadBoxControllerWriteTests
     {
         using TemporaryDirectory directory = new();
         UploadBoxController controller = new(new UploadOptions(maxFileSizeBytes: 1, fileExtension: ".iso"));
-        TestBrowserFile file = fileName == "large.iso" ? new(fileName, [1, 2]) : new(fileName, [1]);
+        TestBrowserFile file = fileName == "large.iso" ? TestUpload.OversizedIso : TestUpload.WrongExtension;
 
         UploadFileResult result = await controller.WriteUploadFile(file, "saved.iso", directory.Path, CancellationToken.None);
 
@@ -175,7 +175,7 @@ public class UploadBoxControllerWriteTests
         using TemporaryDirectory directory = new();
         string input = $"parent{Path.DirectorySeparatorChar}saved.iso";
 
-        UploadFileResult result = await new UploadBoxController().WriteUploadFile(new TestBrowserFile("source.iso", [4]), input, directory.Path, CancellationToken.None);
+        UploadFileResult result = await new UploadBoxController().WriteUploadFile(TestUpload.SourceIso, input, directory.Path, CancellationToken.None);
 
         Assert.Multiple(() =>
         {
@@ -255,7 +255,7 @@ public class UploadBoxControllerWriteTests
         using TemporaryDirectory directory = new();
         UploadBoxController controller = new();
 
-        UploadFileResult result = await controller.WriteUploadFile(new TestBrowserFile("empty.iso", []), "empty.iso", directory.Path, CancellationToken.None);
+        UploadFileResult result = await controller.WriteUploadFile(TestUpload.EmptyIso, "empty.iso", directory.Path, CancellationToken.None);
 
         Assert.Multiple(() =>
         {

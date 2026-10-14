@@ -40,6 +40,28 @@ internal sealed class TestBrowserFile : IBrowserFile
     }
 }
 
+/// <summary>
+/// Shared immutable browser-file examples for routine upload scenarios.
+/// Each call to <see cref="IBrowserFile.OpenReadStream(long, CancellationToken)"/> creates a fresh stream.
+/// </summary>
+internal static class TestUpload
+{
+    public static readonly TestBrowserFile ValidIso = new("disk.iso", [1, 2, 3]);
+    public static readonly TestBrowserFile SourceIso = new("source.iso", [1, 2, 3]);
+    public static readonly TestBrowserFile SourceOneByteIso = new("source.iso", [1]);
+    public static readonly TestBrowserFile OneByteIso = new("one.iso", [1]);
+    public static readonly TestBrowserFile TwoByteIso = new("two.iso", [2]);
+    public static readonly TestBrowserFile ThreeByteIso = new("three.iso", [3]);
+    public static readonly TestBrowserFile NineByteIso = new("a.iso", [9]);
+    public static readonly TestBrowserFile UppercaseIso = new("one.ISO", [1]);
+    public static readonly TestBrowserFile WrongExtension = new("disk.bin", [1]);
+    public static readonly TestBrowserFile FirstWrongExtension = new("one.bin", [1]);
+    public static readonly TestBrowserFile SecondWrongExtension = new("two.bin", [2]);
+    public static readonly TestBrowserFile ExactLimitIso = new("exact.iso", [1, 2]);
+    public static readonly TestBrowserFile OversizedIso = new("large.iso", [1, 2, 3]);
+    public static readonly TestBrowserFile EmptyIso = new("empty.iso", []);
+}
+
 internal sealed class TemporaryDirectory : IDisposable
 {
     public TemporaryDirectory()

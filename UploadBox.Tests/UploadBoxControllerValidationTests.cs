@@ -52,7 +52,7 @@ public class UploadBoxControllerValidationTests
     public void ValidateFiles_AcceptsValidFilesAndReportsReadyMessage()
     {
         UploadBoxController controller = new(new UploadOptions(maxFileCount: 2, fileExtension: ".iso"));
-        IBrowserFile[] files = [new TestBrowserFile("one.ISO", [1]), new TestBrowserFile("two.iso", [2])];
+        IBrowserFile[] files = [TestUpload.UppercaseIso, TestUpload.TwoByteIso];
 
         UploadValidationResult result = controller.ValidateFiles(files);
 
@@ -70,7 +70,7 @@ public class UploadBoxControllerValidationTests
     {
         UploadBoxController controller = new(new UploadOptions(fileExtension: "iso"));
 
-        UploadValidationResult result = controller.ValidateFiles([new TestBrowserFile("disk.bin", [1])]);
+        UploadValidationResult result = controller.ValidateFiles([TestUpload.WrongExtension]);
 
         Assert.Multiple(() =>
         {
@@ -87,7 +87,7 @@ public class UploadBoxControllerValidationTests
         UploadBoxController controller = new(new UploadOptions(fileExtension: ".iso", policy: UploadPolicy.SkipInvalidFiles));
 
         UploadValidationResult result = controller.ValidateFiles([
-            new TestBrowserFile("one.bin", [1]), new TestBrowserFile("two.bin", [2])]);
+            TestUpload.FirstWrongExtension, TestUpload.SecondWrongExtension]);
 
         Assert.Multiple(() =>
         {
@@ -104,8 +104,8 @@ public class UploadBoxControllerValidationTests
         UploadBoxController controller = new(new UploadOptions(maxFileSizeBytes: 2));
 
         UploadValidationResult result = controller.ValidateFiles([
-            new TestBrowserFile("exact.iso", [1, 2]),
-            new TestBrowserFile("large.iso", [1, 2, 3])]);
+            TestUpload.ExactLimitIso,
+            TestUpload.OversizedIso]);
 
         Assert.Multiple(() =>
         {
@@ -120,8 +120,8 @@ public class UploadBoxControllerValidationTests
         UploadBoxController controller = new(new UploadOptions(maxFileCount: 2, maxFileSizeBytes: 1));
 
         UploadValidationResult result = controller.ValidateFiles([
-            new TestBrowserFile("valid.iso", [1]),
-            new TestBrowserFile("large.iso", [1, 2], "application/octet-stream")]);
+            TestUpload.OneByteIso,
+            TestUpload.ExactLimitIso]);
 
         Assert.That(result.IsBlocked, Is.True);
     }
@@ -132,8 +132,8 @@ public class UploadBoxControllerValidationTests
         UploadBoxController controller = new(new UploadOptions(maxFileCount: 2, maxFileSizeBytes: 1, policy: UploadPolicy.SkipInvalidFiles));
 
         UploadValidationResult result = controller.ValidateFiles([
-            new TestBrowserFile("valid.iso", [1]),
-            new TestBrowserFile("large.iso", [1, 2])]);
+            TestUpload.OneByteIso,
+            TestUpload.ExactLimitIso]);
 
         Assert.Multiple(() =>
         {
@@ -149,7 +149,7 @@ public class UploadBoxControllerValidationTests
     {
         UploadBoxController controller = new(new UploadOptions(fileExtension: ".iso", policy: UploadPolicy.SkipInvalidFiles));
 
-        UploadValidationResult result = controller.ValidateFiles([new TestBrowserFile("bad.bin", [1])]);
+        UploadValidationResult result = controller.ValidateFiles([TestUpload.WrongExtension]);
 
         Assert.Multiple(() =>
         {
@@ -164,7 +164,7 @@ public class UploadBoxControllerValidationTests
         UploadBoxController controller = new(new UploadOptions(maxFileCount: 1, policy: UploadPolicy.SkipInvalidFiles));
 
         UploadValidationResult result = controller.ValidateFiles([
-            new TestBrowserFile("one.iso", [1]), new TestBrowserFile("two.iso", [2]), new TestBrowserFile("three.iso", [3])]);
+            TestUpload.OneByteIso, TestUpload.TwoByteIso, TestUpload.ThreeByteIso]);
 
         Assert.Multiple(() =>
         {
