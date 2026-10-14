@@ -191,7 +191,7 @@ namespace UploadBox.Services
 
                 await temporaryStream.FlushAsync(cancellationToken);
 
-                if (IsValidUploadSize(context.File, totalRead))
+                if (!IsValidUploadSize(context.File, totalRead))
                     return new StageFailed(UploadFailureCode.SizeMismatch);
 
                 if (context.File.Size == 0)
@@ -219,20 +219,18 @@ namespace UploadBox.Services
         {
             try
             {
-                if (context.WasOverwritten)
-                {
-                    File.Replace(stagedFile.TemporaryPath, context.DestinationPath, destinationBackupFileName: null);
-                }
-                else
-                {
-                    if (File.Exists(context.DestinationPath))
-                    {
-                        failureCode = UploadFailureCode.DestinationConflict;
-                        return false;
-                    }
+                bool fileExists = File.Exists(context.DestinationPath);
 
-                    File.Move(stagedFile.TemporaryPath, context.DestinationPath);
+                if (!context.WasOverwritten && fileExists)
+                {
+                    failureCode = UploadFailureCode.DestinationConflict;
+                    return false;
                 }
+
+                if (fileExists)
+                    File.Replace(stagedFile.TemporaryPath, context.DestinationPath, destinationBackupFileName: null);
+                else
+                    File.Move(stagedFile.TemporaryPath, context.DestinationPath);
 
                 failureCode = default;
                 return true;
@@ -301,14 +299,6 @@ namespace UploadBox.Services
             return CommitValidatedUpload(context, (StageReady)stagedResult);
         }
 
-        private UploadCancelled CreateCancelledResult(string fileName)
-        {
-            string message = $"Upload of '{fileName}' was cancelled.";
-            CancelUpload(message);
-
-            return new UploadCancelled(fileName);
-        }
-
         private UploadFailed CreateFailure(
             string fileName,
             UploadFailureCode code)
@@ -327,6 +317,14 @@ namespace UploadBox.Services
             FailUpload(message);
 
             return new UploadFailed(fileName, code, message);
+        }
+
+        private UploadCancelled CreateCancelledResult(string fileName)
+        {
+            string message = $"Upload of '{fileName}' was cancelled.";
+            CancelUpload(message);
+
+            return new UploadCancelled(fileName);
         }
 
         private UploadSucceeded CreateSuccess(UploadContext context, StageReady stagedFile)
