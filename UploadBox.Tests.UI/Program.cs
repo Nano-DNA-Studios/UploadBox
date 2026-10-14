@@ -1,4 +1,5 @@
 using UploadBox.Tests.UI.Components;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace UploadBox.Tests.UI
 {
@@ -7,10 +8,15 @@ namespace UploadBox.Tests.UI
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Logging.ClearProviders();
+            builder.Logging.AddConsole();
 
             // Add services to the container.
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
+
+            // This host is a local visual test harness; its protection keys need not survive restarts.
+            builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
 
             var app = builder.Build();
 

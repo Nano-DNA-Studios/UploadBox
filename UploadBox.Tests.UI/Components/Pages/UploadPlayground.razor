@@ -1,0 +1,447 @@
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Forms
+@using global::UploadBox.Models
+@using global::UploadBox.Services
+@using global::UploadBox.Pages
+@implements IDisposable
+
+<section class="upload-playground">
+    <header class="playground-header">
+        <p class="eyebrow">UploadBox visual playground</p>
+        <h1>@(AllowMultipleFiles ? "Multiple file upload" : "Single file upload")</h1>
+        <p class="playground-intro">
+            @(AllowMultipleFiles
+                ? "Choose a batch to see validation, per-file results, and aggregate progress. Files are uploaded one at a time."
+                : "Choose one file to see the upload interaction, progress updates, and final result.")
+        </p>
+    </header>
+
+    <div class="playground-grid">
+        <section class="playground-card upload-card" aria-labelledby="upload-panel-title">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Selection</p>
+                    <h2 id="upload-panel-title">Choose files</h2>
+                </div>
+                <span class="mode-badge">@(AllowMultipleFiles ? "Batch · up to 20" : "Single file")</span>
+            </div>
+
+            <UploadBox Controller="@Controller" UploadRequested="HandleUploadRequested" />
+
+            <div class="upload-limits">
+                <span>Maximum @MaxFileSizeLabel per file</span>
+                <span>Any file type</span>
+            </div>
+
+            <div class="destination-panel">
+                <span class="destination-label">Server save folder</span>
+                <code>@UploadDirectory</code>
+                <small>Files with the same name replace the existing file.</small>
+            </div>
+
+            <div class="actions-row">
+                <div class="state-summary">
+                    <span class="status-dot @StatusClass"></span>
+                    <span>@StatusText</span>
+                </div>
+                <button class="cancel-button" type="button" @onclick="CancelUpload" disabled="@(!_isProcessing || _cancelRequested)">
+                    @(_cancelRequested ? "Cancelling…" : "Cancel upload")
+                </button>
+            </div>
+
+            <div class="app-progress-row" style="width:100%;">
+                <div class="app-progress-label">
+                    <span>Overall Upload Progress</span>
+                    <span>@SelectedUploadProgress.ToString("0", CultureInfo.InvariantCulture)%</span>
+                </div>
+                <progress class="w-100" value="@SelectedUploadProgress" max="100"></progress>
+            </div>
+
+            @if (_currentFileName is not null && _isProcessing)
+            {
+                <p class="current-file">Current file: <strong>@_currentFileName</strong></p>
+            }
+        </section>
+
+        <section class="playground-card results-card" aria-labelledby="results-title">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Results</p>
+                    <h2 id="results-title">Files in this session</h2>
+                </div>
+                <span class="result-count">@_uploadItems.Count</span>
+            </div>
+
+            @if (_uploadItems.Count == 0)
+            {
+                <div class="empty-state">
+                    <span class="empty-state-icon" aria-hidden="true">⇧</span>
+                    <p>Your selected files and their results will appear here.</p>
+                </div>
+            }
+            else
+            {
+                <ul class="upload-results">
+                    @foreach (UploadDisplayItem item in _uploadItems)
+                    {
+                        <li class="upload-result">
+                            <span class="result-icon @item.StatusClass" aria-hidden="true">@item.StatusIcon</span>
+                            <span class="result-details">
+                                <strong title="@item.FileName">@item.FileName</strong>
+                                <small>@FormatBytes(item.FileSize) · @item.Message</small>
+                            </span>
+                            <span class="result-status @item.StatusClass">@item.Status</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="playground-card activity-card" aria-labelledby="activity-title">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Activity</p>
+                    <h2 id="activity-title">Process messages</h2>
+                </div>
+                <span class="result-count">@_messages.Count</span>
+            </div>
+
+            @if (_messages.Count == 0)
+            {
+                <p class="activity-empty">Messages from selection through completion will be collected here.</p>
+            }
+            else
+            {
+                <ol class="activity-log" aria-live="polite" aria-relevant="additions text">
+                    @foreach (ActivityMessage message in _messages)
+                    {
+                        <li class="activity-message @message.KindClass">
+                            <time>@message.Timestamp</time>
+                            <span>@message.Text</span>
+                        </li>
+                    }
+                </ol>
+            }
+        </section>
+    </div>
+</section>
+
+@code {
+    private const long MaxFileSizeBytes = 512L * 1024 * 1024;
+    private const int MaxBatchFileCount = 20;
+    private const int UploadBufferSize = 128 * 1024;
+
+    [Parameter]
+    public bool AllowMultipleFiles { get; set; }
+
+    private UploadBoxController Controller { get; set; } = null!;
+    private CancellationTokenSource? _uploadCancellation;
+    private readonly List<UploadDisplayItem> _uploadItems = [];
+    private readonly List<ActivityMessage> _messages = [];
+    private bool _isProcessing;
+    private bool _cancelRequested;
+    private string? _currentFileName;
+    private long _currentFileSize;
+    private long _currentFileBytes;
+    private long _completedBytes;
+    private long _batchTotalBytes;
+    private int _completedFileCount;
+    private int _acceptedFileCount;
+    private double SelectedUploadProgress;
+
+    private string UploadDirectory => Path.Combine(AppContext.BaseDirectory, "Upload");
+    private string MaxFileSizeLabel => "512 MiB";
+
+    private string StatusText => _cancelRequested
+        ? "Cancellation requested"
+        : _isProcessing
+            ? "Uploading"
+            : Controller.Status switch
+            {
+                UploadBoxStatus.Idle => "Ready for files",
+                UploadBoxStatus.FileSelected => Controller.StatusMessage,
+                UploadBoxStatus.Completed => "Upload complete",
+                UploadBoxStatus.Cancelled => "Upload cancelled",
+                UploadBoxStatus.Error => "Upload error",
+                _ => Controller.StatusMessage
+            };
+
+    private string StatusClass => _cancelRequested
+        ? "status-cancelled"
+        : _isProcessing
+            ? "status-active"
+            : Controller.Status switch
+            {
+                UploadBoxStatus.Completed => "status-success",
+                UploadBoxStatus.Cancelled => "status-cancelled",
+                UploadBoxStatus.Error => "status-error",
+                _ => "status-idle"
+            };
+
+    protected override void OnInitialized()
+    {
+        UploadOptions options = new(
+            maxFileCount: AllowMultipleFiles ? MaxBatchFileCount : 1,
+            maxFileSizeBytes: MaxFileSizeBytes,
+            policy: AllowMultipleFiles ? UploadPolicy.SkipInvalidFiles : UploadPolicy.Strict,
+            bufferSize: UploadBufferSize);
+
+        Controller = new UploadBoxController(options);
+        Controller.StateChanged += HandleControllerStateChanged;
+    }
+
+    private async Task HandleUploadRequested(UploadRequest request)
+    {
+        if (_isProcessing)
+        {
+            AddMessage("A batch is already running; the new selection was ignored.", "warning");
+            return;
+        }
+
+        _isProcessing = true;
+        _cancelRequested = false;
+        _uploadCancellation = new CancellationTokenSource();
+        _uploadItems.Clear();
+        _currentFileName = null;
+        _currentFileBytes = 0;
+        _completedBytes = 0;
+        _batchTotalBytes = 0;
+        _completedFileCount = 0;
+        _acceptedFileCount = 0;
+        SelectedUploadProgress = 0;
+
+        try
+        {
+            AddMessage($"Received a selection of {request.FileCount} file(s).", "info");
+            UploadValidationResult validation = Controller.ValidateFiles(request.Files);
+            AddMessage(validation.Message, validation.IsBlocked ? "error" : "info");
+
+            foreach (UploadFileValidationResult fileResult in validation.Files)
+            {
+                string status = fileResult.IsAccepted
+                    ? validation.IsBlocked ? "Blocked" : "Queued"
+                    : "Rejected";
+                string message = fileResult.IsAccepted
+                    ? validation.IsBlocked ? "The strict upload policy blocked this selection." : "Waiting to upload."
+                    : fileResult.Message;
+
+                _uploadItems.Add(new UploadDisplayItem(fileResult.File, fileResult.FileName, fileResult.FileSize, status, message));
+            }
+
+            if (!validation.CanUpload)
+            {
+                if (_uploadItems.Count == 0)
+                    AddMessage("No files are available to upload.", "warning");
+                return;
+            }
+
+            List<UploadFileValidationResult> acceptedFiles = validation.Files.Where(file => file.IsAccepted).ToList();
+            _acceptedFileCount = acceptedFiles.Count;
+            _batchTotalBytes = acceptedFiles.Sum(file => file.FileSize);
+            Directory.CreateDirectory(UploadDirectory);
+            AddMessage($"Saving accepted files to {UploadDirectory}.", "info");
+
+            for (int index = 0; index < acceptedFiles.Count; index++)
+            {
+                UploadFileValidationResult fileResult = acceptedFiles[index];
+                UploadDisplayItem item = _uploadItems.First(entry => ReferenceEquals(entry.File, fileResult.File));
+
+                if (_uploadCancellation.Token.IsCancellationRequested)
+                {
+                    MarkRemainingFilesSkipped(acceptedFiles, index);
+                    break;
+                }
+
+                _currentFileName = fileResult.FileName;
+                _currentFileSize = fileResult.FileSize;
+                _currentFileBytes = 0;
+                item.SetStatus("Uploading", "Transfer in progress.");
+                AddMessage($"Uploading '{fileResult.FileName}' ({FormatBytes(fileResult.FileSize)}).", "info");
+
+                // Clear the previous file's progress before the controller starts the next transfer.
+                Controller.MarkFilesSelected(acceptedFiles.Count);
+                await InvokeAsync(StateHasChanged);
+
+                UploadFileResult result;
+                try
+                {
+                    result = await Controller.WriteUploadFile(
+                        fileResult.File,
+                        Path.GetFileName(fileResult.FileName),
+                        UploadDirectory,
+                        _uploadCancellation.Token);
+                }
+                catch (OperationCanceledException) when (_uploadCancellation.Token.IsCancellationRequested)
+                {
+                    item.SetStatus("Cancelled", "The active transfer was cancelled.");
+                    AddMessage($"Upload of '{fileResult.FileName}' was cancelled.", "warning");
+                    MarkRemainingFilesSkipped(acceptedFiles, index + 1);
+                    break;
+                }
+                catch (Exception exception)
+                {
+                    item.SetStatus("Failed", exception.Message);
+                    _currentFileBytes = 0;
+                    UpdateAggregateProgress();
+                    AddMessage($"Failed to upload '{fileResult.FileName}': {exception.Message}", "error");
+                    continue;
+                }
+
+                if (result is UploadSucceeded success)
+                {
+                    item.SetStatus("Uploaded", $"Saved {FormatBytes(success.Stats.BytesWritten)}.");
+                    _completedBytes += success.Stats.BytesWritten;
+                    _completedFileCount++;
+                    _currentFileBytes = 0;
+                    AddMessage($"Uploaded '{fileResult.FileName}' to '{success.File.SavedPath}'.", "success");
+                    UpdateAggregateProgress();
+                    continue;
+                }
+
+                if (result is UploadCancelled)
+                {
+                    item.SetStatus("Cancelled", "The active transfer was cancelled.");
+                    AddMessage($"Upload of '{fileResult.FileName}' was cancelled.", "warning");
+                    MarkRemainingFilesSkipped(acceptedFiles, index + 1);
+                    break;
+                }
+
+                UploadFailed failure = (UploadFailed)result;
+                item.SetStatus("Failed", failure.UserMessage);
+                AddMessage($"Failed to upload '{fileResult.FileName}': {failure.UserMessage}", "error");
+            }
+
+            if (_cancelRequested)
+                AddMessage("Batch stopped. Files completed before cancellation remain saved.", "warning");
+            else if (_uploadItems.Any(item => item.Status == "Failed"))
+                AddMessage("Batch finished with one or more failed files.", "warning");
+            else
+                AddMessage("Batch processing finished.", "success");
+        }
+        catch (Exception exception)
+        {
+            AddMessage($"The upload page encountered an error: {exception.Message}", "error");
+        }
+        finally
+        {
+            _isProcessing = false;
+            _currentFileName = null;
+            _uploadCancellation?.Dispose();
+            _uploadCancellation = null;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void CancelUpload()
+    {
+        if (!_isProcessing || _uploadCancellation is null || _cancelRequested)
+            return;
+
+        _cancelRequested = true;
+        AddMessage("Cancellation requested. Waiting for the active transfer to stop…", "warning");
+        _uploadCancellation.Cancel();
+    }
+
+    private void MarkRemainingFilesSkipped(IReadOnlyList<UploadFileValidationResult> acceptedFiles, int startIndex)
+    {
+        for (int index = startIndex; index < acceptedFiles.Count; index++)
+        {
+            UploadDisplayItem item = _uploadItems.First(entry => ReferenceEquals(entry.File, acceptedFiles[index].File));
+            item.SetStatus("Skipped", "Not started because the batch was cancelled.");
+        }
+    }
+
+    private void HandleControllerStateChanged(object? sender, EventArgs eventArgs)
+    {
+        UploadProgress? progress = Controller.Progress;
+
+        _ = InvokeAsync(() =>
+        {
+            if (_isProcessing
+                && progress is not null
+                && _currentFileName is not null
+                && string.Equals(Path.GetFileName(progress.FileName), Path.GetFileName(_currentFileName), StringComparison.OrdinalIgnoreCase))
+            {
+                _currentFileBytes = Math.Min(progress.BytesTransferred, _currentFileSize);
+                UpdateAggregateProgress();
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    private void UpdateAggregateProgress()
+    {
+        if (_batchTotalBytes == 0)
+        {
+            SelectedUploadProgress = _acceptedFileCount == 0
+                ? 0
+                : _completedFileCount * 100d / _acceptedFileCount;
+        }
+        else
+        {
+            SelectedUploadProgress = Math.Clamp((_completedBytes + _currentFileBytes) * 100d / _batchTotalBytes, 0d, 100d);
+        }
+    }
+
+    private void AddMessage(string message, string kind)
+    {
+        _messages.Add(new ActivityMessage(DateTimeOffset.Now.ToString("HH:mm:ss.fff", CultureInfo.CurrentCulture), message, kind));
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] sizes = ["B", "KB", "MB", "GB"];
+        double value = bytes;
+        int sizeIndex = 0;
+        while (value >= 1024 && sizeIndex < sizes.Length - 1)
+        {
+            value /= 1024;
+            sizeIndex++;
+        }
+
+        return $"{value:0.##} {sizes[sizeIndex]}";
+    }
+
+    public void Dispose()
+    {
+        if (Controller is not null)
+            Controller.StateChanged -= HandleControllerStateChanged;
+
+        _uploadCancellation?.Cancel();
+        _uploadCancellation?.Dispose();
+    }
+
+    private sealed class UploadDisplayItem(IBrowserFile file, string fileName, long fileSize, string status, string message)
+    {
+        public IBrowserFile File { get; } = file;
+        public string FileName { get; } = fileName;
+        public long FileSize { get; } = fileSize;
+        public string Status { get; private set; } = status;
+        public string Message { get; private set; } = message;
+        public string StatusClass => Status.ToLowerInvariant() switch
+        {
+            "uploaded" => "result-success",
+            "failed" or "rejected" or "blocked" => "result-error",
+            "cancelled" or "skipped" => "result-cancelled",
+            "uploading" => "result-active",
+            _ => "result-idle"
+        };
+        public string StatusIcon => Status switch
+        {
+            "Uploaded" => "✓",
+            "Failed" or "Rejected" or "Blocked" => "!",
+            "Cancelled" or "Skipped" => "–",
+            "Uploading" => "↗",
+            _ => "•"
+        };
+
+        public void SetStatus(string newStatus, string newMessage)
+        {
+            Status = newStatus;
+            Message = newMessage;
+        }
+    }
+
+    private sealed record ActivityMessage(string Timestamp, string Text, string KindClass);
+}
