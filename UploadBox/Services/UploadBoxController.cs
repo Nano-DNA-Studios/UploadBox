@@ -103,7 +103,6 @@ namespace UploadBox.Services
             List<UploadFileValidationResult> fileResults = new List<UploadFileValidationResult>();
             int acceptedCount = 0;
 
-
             foreach (IBrowserFile file in files)
             {
                 UploadFileValidationResult validationResult = GetFileValidationResult(file);
@@ -271,12 +270,8 @@ namespace UploadBox.Services
 
         public async Task<UploadFileResult> WriteUploadFile(IBrowserFile file, string fileName, string fullDirectoryPath, CancellationToken cancellationToken) => await WriteUploadFile(file, fileName, fullDirectoryPath, UploadBatchProgressContext.SingleFile(file.Size), cancellationToken);
 
-
         public async Task<UploadFileResult> WriteUploadFile(IBrowserFile file, string fileName, string fullDirectoryPath, UploadBatchProgressContext progressContext, CancellationToken cancellationToken)
         {
-            //ArgumentNullException.ThrowIfNull(file);
-            //ArgumentNullException.ThrowIfNull(progressContext);
-
             if (cancellationToken.IsCancellationRequested)
                 return CreateCancelledResult(file.Name);
 
@@ -332,7 +327,6 @@ namespace UploadBox.Services
         {
             string message = $"Upload of '{fileName}' was cancelled.";
             CancelUpload(message);
-
             return new UploadCancelled(fileName);
         }
 
@@ -343,9 +337,7 @@ namespace UploadBox.Services
                 context.SafeFileName,
                 context.DestinationPath);
 
-            UploadFileStats stats = new UploadFileStats(
-                stagedFile.BytesWritten,
-                context.WasOverwritten);
+            UploadFileStats stats = new UploadFileStats(stagedFile.BytesWritten, context.WasOverwritten);
 
             CompleteUpload($"Uploaded '{context.File.Name}'.");
 
