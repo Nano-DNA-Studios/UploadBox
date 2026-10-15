@@ -1,0 +1,139 @@
+name: Publish
+
+on:
+  release:
+    types: [published]  
+  
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  setup:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    steps:
+      - name: Install .NET to Device
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.x.x"
+
+      - name: Clone and Checkout the Repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+          clean: true
+
+      - name: Run .NET Restore to reload NuGet Packages
+        run: dotnet restore 
+
+  version:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    needs: setup
+    outputs:
+      version: ${{ steps.get-tag-version.outputs.version }}
+
+    steps:
+      - name: Get Tag Version
+        id: get-tag-version
+        shell: bash
+        run: |
+          tagName="${{ github.event.release.tag_name }}"
+          version="${tagName#v}"  # Removes the 'v' prefix if it exists
+          echo "Extracted version $version from tag"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build-nuget:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    needs: [setup, version]
+    outputs:
+      packages: ${{ steps.extract-package-names.outputs.PACKAGES}}
+    steps:
+      - name: Build for NuGet 
+        shell: bash
+        run: dotnet build ${{ github.event.repository.name }}/${{ github.event.repository.name }}.csproj -c Release -f net9.0 -p:Version=${{ needs.version.outputs.version }}
+
+      - name: Pack for NuGet
+        id: pack-nuget
+        shell: bash
+        run: dotnet pack -c Release -p:Version=${{ needs.version.outputs.version }} --no-build 
+
+  upload-nuget:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    needs: build-nuget
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Upload all NuGet packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}
+          path: ./nupkg/*.nupkg
+          retention-days: 1
+
+      - name: Upload NuGet Packages to Release
+        working-directory: ./nupkg
+        shell: bash
+        run: |
+          echo "Uploading NuGet Package as a Release Asset"
+          gh release upload "${{ github.event.release.tag_name }}" *.nupkg --repo ${{ github.repository }}
+
+  build-source:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    needs: version
+    strategy:
+      matrix:
+        platforms: ["win-x64", "win-x86", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64"]
+    steps:
+      - name: Build as Standalone Source
+        shell: bash
+        run: dotnet publish ${{ github.event.repository.name }}/${{ github.event.repository.name }}.csproj -c Release -r "${{ matrix.platforms }}" -p:Version=${{ needs.version.outputs.version }} --self-contained true
+  
+  upload-source:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    needs: [build-source, version]
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      matrix:
+        platforms: ["win-x64", "win-x86", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64"]
+    steps:
+      - name: Compress Standalone Source
+        shell: bash
+        run: tar -czf ./nupkg/${{ github.event.repository.name }}-${{ needs.version.outputs.version }}-${{ matrix.platforms }}.tar.gz -C ${{ github.event.repository.name }}/bin/Release/net9.0/${{ matrix.platforms }}/publish .
+
+      - name: Upload Standalone Source
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-${{ needs.version.outputs.version }}-${{ matrix.platforms }}.tar.gz
+          path: ./nupkg/${{ github.event.repository.name }}-${{ needs.version.outputs.version }}-${{ matrix.platforms }}.tar.gz
+          retention-days: 1
+
+      - name: Upload Standalone Sources to Release
+        working-directory: ./nupkg
+        shell: bash
+        run: |
+          echo "Uploading ${{ github.event.repository.name }}-${{ needs.version.outputs.version }}-${{ matrix.platforms }}.tar.gz as a Release Asset"
+          gh release upload "${{ github.event.release.tag_name }}" "${{ github.event.repository.name }}-${{ needs.version.outputs.version }}-${{ matrix.platforms }}.tar.gz" --repo ${{ github.repository }}
+
+  publish-to-nuget:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    needs: build-nuget
+    steps:
+      - name: Publish to GitHub Packages
+        shell: bash
+        run: |
+          dotnet nuget push "./nupkg/*.nupkg" \
+          --source "https://nuget.pkg.github.com/Nano-DNA-Studios/index.json" \
+          --api-key ${{ secrets.GITHUB_TOKEN }} \
+          --skip-duplicate
+          
+      - name: Publish to NuGet Website
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_KEY }}
+        run: |
+          dotnet nuget push "./nupkg/*.nupkg" \
+          --source "https://api.nuget.org/v3/index.json" \
+          --api-key "$NUGET_API_KEY" \
+          --skip-duplicate
