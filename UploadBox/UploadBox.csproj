@@ -6,10 +6,6 @@
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
   </PropertyGroup>
 
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
 	<!-- Include Items to Edit -->
 	<ItemGroup>
 		<!-- Project Documents -->
@@ -22,6 +18,14 @@
 		<None Include="..\.github\workflows\build.yml" Link="Workflows\build.yml" />
 		<None Include="..\.github\workflows\publish.yml" Link="Workflows\publish.yml" />
 		<None Include="..\.github\workflows\test.yml" Link="Workflows\test.yml" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="NLog" />
 	</ItemGroup>
 
 </Project>

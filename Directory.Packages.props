@@ -5,13 +5,14 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Common Dependencies -->
-    <!-- Test Project Dependencies -->
-		<PackageVersion Include="coverlet.collector" Version="6.0.2" />
-		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-		<PackageVersion Include="NUnit" Version="4.2.2" />
-		<PackageVersion Include="NUnit.Analyzers" Version="4.4.0" />
-		<PackageVersion Include="NUnit3TestAdapter" Version="4.6.0" />
-		<PackageVersion Include="bunit" Version="2.11.3" />
-		<!-- Test UI Project Dependencies-->
+		<PackageVersion Include="NLog" Version="6.2.2" />
+		<!-- Test Project Dependencies -->
+    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="NUnit" Version="4.2.2" />
+    <PackageVersion Include="NUnit.Analyzers" Version="4.4.0" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageVersion Include="bunit" Version="2.11.3" />
+    <!-- Test UI Project Dependencies-->
   </ItemGroup>
 </Project>
