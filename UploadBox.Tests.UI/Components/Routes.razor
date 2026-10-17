@@ -1,4 +1,7 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿@*
+Resolves the visual test host pages and applies the main layout.
+*@
+<Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />

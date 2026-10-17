@@ -3,8 +3,15 @@ using Microsoft.AspNetCore.DataProtection;
 
 namespace UploadBox.Tests.UI
 {
+    /// <summary>
+    /// Configures and runs the local visual test web host.
+    /// </summary>
     public class Program
     {
+        /// <summary>
+        /// Builds and starts the interactive server-rendered UI test host.
+        /// </summary>
+        /// <param name="args">Command-line arguments passed to the web host.</param>
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);

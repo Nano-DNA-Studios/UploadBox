@@ -4,8 +4,14 @@ using Microsoft.AspNetCore.Components.Forms;
 
 namespace UploadBox.Tests;
 
+/// <summary>
+/// Tests upload controller initialization, selection validation, and status updates.
+/// </summary>
 public class UploadBoxControllerValidationTests
 {
+    /// <summary>
+    /// Tests constructor defaults to idle with default options.
+    /// </summary>
     [Test]
     public void Constructor_DefaultsToIdleWithDefaultOptions()
     {
@@ -21,6 +27,9 @@ public class UploadBoxControllerValidationTests
         });
     }
 
+    /// <summary>
+    /// Tests constructor uses provided options.
+    /// </summary>
     [Test]
     public void Constructor_UsesProvidedOptions()
     {
@@ -29,6 +38,9 @@ public class UploadBoxControllerValidationTests
         Assert.That(new UploadBoxController(options).Options, Is.SameAs(options));
     }
 
+    /// <summary>
+    /// Tests validate files null or empty selection is blocked.
+    /// </summary>
     [Test]
     public void ValidateFiles_NullOrEmptySelectionIsBlocked()
     {
@@ -48,6 +60,9 @@ public class UploadBoxControllerValidationTests
         });
     }
 
+    /// <summary>
+    /// Tests validate files accepts valid files and reports ready message.
+    /// </summary>
     [Test]
     public void ValidateFiles_AcceptsValidFilesAndReportsReadyMessage()
     {
@@ -65,6 +80,9 @@ public class UploadBoxControllerValidationTests
         });
     }
 
+    /// <summary>
+    /// Tests validate files rejects wrong extension case insensitively.
+    /// </summary>
     [Test]
     public void ValidateFiles_RejectsWrongExtensionCaseInsensitively()
     {
@@ -81,6 +99,9 @@ public class UploadBoxControllerValidationTests
         });
     }
 
+    /// <summary>
+    /// Tests validate files reports each invalid extension with plural summary.
+    /// </summary>
     [Test]
     public void ValidateFiles_ReportsEachInvalidExtensionWithPluralSummary()
     {
@@ -98,6 +119,9 @@ public class UploadBoxControllerValidationTests
         });
     }
 
+    /// <summary>
+    /// Tests validate files rejects file larger than limit but accepts exact limit.
+    /// </summary>
     [Test]
     public void ValidateFiles_RejectsFileLargerThanLimitButAcceptsExactLimit()
     {
@@ -114,6 +138,9 @@ public class UploadBoxControllerValidationTests
         });
     }
 
+    /// <summary>
+    /// Tests validate files strict policy blocks mixed valid and invalid files.
+    /// </summary>
     [Test]
     public void ValidateFiles_StrictPolicyBlocksMixedValidAndInvalidFiles()
     {
@@ -126,6 +153,9 @@ public class UploadBoxControllerValidationTests
         Assert.That(result.IsBlocked, Is.True);
     }
 
+    /// <summary>
+    /// Tests validate files skip invalid files allows accepted files and reports rejected ones.
+    /// </summary>
     [Test]
     public void ValidateFiles_SkipInvalidFilesAllowsAcceptedFilesAndReportsRejectedOnes()
     {
@@ -144,6 +174,9 @@ public class UploadBoxControllerValidationTests
         });
     }
 
+    /// <summary>
+    /// Tests validate files skip invalid files blocks when no file is accepted.
+    /// </summary>
     [Test]
     public void ValidateFiles_SkipInvalidFilesBlocksWhenNoFileIsAccepted()
     {
@@ -158,6 +191,9 @@ public class UploadBoxControllerValidationTests
         });
     }
 
+    /// <summary>
+    /// Tests validate files enforces maximum count and summarizes excess once.
+    /// </summary>
     [Test]
     public void ValidateFiles_EnforcesMaximumCountAndSummarizesExcessOnce()
     {
@@ -178,6 +214,12 @@ public class UploadBoxControllerValidationTests
         });
     }
 
+    /// <summary>
+    /// Tests mark files selected updates state and notifies.
+    /// </summary>
+    /// <param name="count">File count supplied to the tested operation.</param>
+    /// <param name="status">Expected controller status.</param>
+    /// <param name="message">Expected status message.</param>
     [TestCase(0, UploadBoxStatus.Idle, "")]
     [TestCase(-2, UploadBoxStatus.Idle, "")]
     [TestCase(1, UploadBoxStatus.FileSelected, "1 file(s) selected.")]
