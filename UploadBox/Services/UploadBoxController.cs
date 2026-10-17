@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components.Forms;
+using NLog;
 using UploadBox.Models;
 
 namespace UploadBox.Services
@@ -45,6 +46,11 @@ namespace UploadBox.Services
     public sealed class UploadBoxController
     {
         /// <summary>
+        /// Logger used to record upload validation and lifecycle events.
+        /// </summary>
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+        /// <summary>
         /// Gets the options used to validate and stage uploads.
         /// </summary>
         public UploadOptions Options { get; }
@@ -84,6 +90,8 @@ namespace UploadBox.Services
 
             Status = UploadBoxStatus.Idle;
             StatusMessage = string.Empty;
+
+            Logger.Debug("Initialized upload controller with maximum file size {MaxFileSizeBytes} bytes, maximum file count {MaxFileCount}, and extension {FileExtension}", Options.MaxFileSizeBytes, Options.MaxFileCount, Options.FileExtension);
         }
 
         /// <summary>
@@ -241,12 +249,17 @@ namespace UploadBox.Services
         public UploadValidationResult ValidateFiles(IReadOnlyList<IBrowserFile> files)
         {
             if (files == null || files.Count == 0)
+            {
+                Logger.Debug("File selection validation blocked because no files were selected");
                 return new UploadValidationResult(Array.Empty<UploadFileValidationResult>(), isBlocked: true, "No files were selected.");
+            }
 
             UploadFileValidationResult[] fileResults = FilterFiles(files);
             bool isBlocked = IsBlocked(fileResults);
             int acceptedCount = fileResults.Count(file => file.IsAccepted);
             string message = CreateValidationMessage(files.Count, acceptedCount, fileResults, isBlocked);
+
+            Logger.Debug("Validated {SelectedFileCount} selected files: {AcceptedFileCount} accepted, {RejectedFileCount} rejected, blocked={IsBlocked}", files.Count, acceptedCount, files.Count - acceptedCount, isBlocked);
 
             return new UploadValidationResult(fileResults, isBlocked, message);
         }
@@ -265,9 +278,14 @@ namespace UploadBox.Services
             long totalRead = 0;
 
             if (string.IsNullOrEmpty(directoryPath))
+            {
+                Logger.Debug("Cannot stage upload for {FileName}: destination path has no directory", context.SafeFileName);
                 return new StageFailed(UploadFailureCode.DestinationUnavailable);
+            }
 
             string temporaryPath = Path.Combine(directoryPath, $".{context.SafeFileName}.{Guid.NewGuid():N}.uploading");
+
+            Logger.Debug("Staging upload for {FileName} with expected size {FileSizeBytes} bytes", context.SafeFileName, context.File.Size);
 
             try
             {
@@ -282,7 +300,10 @@ namespace UploadBox.Services
                     totalRead += bytesRead;
 
                     if (totalRead > Options.MaxFileSizeBytes)
+                    {
+                        Logger.Debug("Upload for {FileName} exceeded the maximum size of {MaxFileSizeBytes} bytes", context.SafeFileName, Options.MaxFileSizeBytes);
                         return new StageFailed(UploadFailureCode.FileTooLarge);
+                    }
 
                     await temporaryStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
 
@@ -292,26 +313,35 @@ namespace UploadBox.Services
                 await temporaryStream.FlushAsync(cancellationToken);
 
                 if (!IsValidUploadSize(context.File, totalRead))
+                {
+                    Logger.Debug("Upload size mismatch for {FileName}: expected {ExpectedBytes} bytes, received {BytesWritten} bytes", context.SafeFileName, context.File.Size, totalRead);
                     return new StageFailed(UploadFailureCode.SizeMismatch);
+                }
 
                 if (context.File.Size == 0)
                     ReportProgress(context.SafeFileName, 0, 0, progressContext);
 
                 stagingSucceeded = true;
+                Logger.Debug("Staged upload for {FileName}: {BytesWritten} bytes", context.SafeFileName, totalRead);
                 return new StageReady(temporaryPath, totalRead);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
+                Logger.Debug("Upload staging cancelled for {FileName} after {BytesWritten} bytes", context.SafeFileName, totalRead);
                 return new StageCancelled();
             }
             catch (Exception ex)
             {
+                Logger.Error(ex, "Upload staging failed for {FileName} after {BytesWritten} bytes", context.SafeFileName, totalRead);
                 return new StageFailed(UploadFailureCode.TransferFailed, ex);
             }
             finally
             {
                 if (!stagingSucceeded)
+                {
+                    Logger.Debug("Removing incomplete staged upload for {FileName}", context.SafeFileName);
                     DeleteTemporaryFile(temporaryPath);
+                }
             }
         }
 
@@ -331,27 +361,37 @@ namespace UploadBox.Services
                 if (!context.WasOverwritten && fileExists)
                 {
                     failureCode = UploadFailureCode.DestinationConflict;
+                    Logger.Debug("Cannot commit upload for {FileName}: destination already exists and overwrite was not requested", context.SafeFileName);
                     return false;
                 }
 
                 if (fileExists)
+                {
+                    Logger.Debug("Replacing existing destination for {FileName}", context.SafeFileName);
                     File.Replace(stagedFile.TemporaryPath, context.DestinationPath, destinationBackupFileName: null);
+                }
                 else
+                {
+                    Logger.Debug("Creating upload destination for {FileName}", context.SafeFileName);
                     File.Move(stagedFile.TemporaryPath, context.DestinationPath);
+                }
 
                 failureCode = default;
                 return true;
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
                 failureCode = UploadFailureCode.DestinationUnavailable;
+                Logger.Error(ex, "Access denied while committing upload for {FileName}", context.SafeFileName);
                 return false;
             }
-            catch (IOException)
+            catch (IOException ex)
             {
                 failureCode = File.Exists(context.DestinationPath)
                     ? UploadFailureCode.DestinationConflict
                     : UploadFailureCode.TransferFailed;
+
+                Logger.Error(ex, "I/O error while committing upload for {FileName}; failure code {FailureCode}", context.SafeFileName, failureCode);
 
                 return false;
             }
@@ -402,27 +442,42 @@ namespace UploadBox.Services
         public async Task<UploadFileResult> WriteUploadFile(IBrowserFile file, string fileName, string fullDirectoryPath, UploadBatchProgressContext progressContext, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
+            {
                 return CreateCancelledResult(file.Name);
+            }
 
             string safeFileName = Path.GetFileName(fileName);
 
             if (IsInvalidFileName(safeFileName))
+            {
                 return CreateFailure(file.Name, UploadFailureCode.InvalidFileName);
+            }
 
             if (IsInvalidDirectoryPath(fullDirectoryPath))
+            {
                 return CreateFailure(file.Name, UploadFailureCode.DestinationUnavailable);
+            }
 
             if (!IsValidUploadFile(file, safeFileName, out UploadFileResult invalidResult))
+            {
                 return invalidResult;
+            }
 
             if (file.Size > progressContext.TotalSizeBytes - progressContext.CompletedBytesBeforeCurrentFile)
+            {
+                Logger.Error("Batch progress total {TotalSizeBytes} bytes does not include upload {FileName} of {FileSizeBytes} bytes after {CompletedBytes} completed bytes", progressContext.TotalSizeBytes, file.Name, file.Size, progressContext.CompletedBytesBeforeCurrentFile);
                 throw new ArgumentException("The batch total size must include completed bytes and the current file.", nameof(progressContext));
+            }
 
             if (!Directory.Exists(fullDirectoryPath))
+            {
+                Logger.Debug("Creating upload destination directory for {FileName}", safeFileName);
                 Directory.CreateDirectory(fullDirectoryPath);
+            }
 
             UploadContext context = UploadContext.NewContext(file, safeFileName, fullDirectoryPath);
             BeginUpload($"Uploading '{file.Name}'.");
+            Logger.Info("Starting upload for {FileName}, size {FileSizeBytes} bytes, batch file {FileIndex} of {FileCount}", file.Name, file.Size, progressContext.FileIndex, progressContext.FileCount);
 
             StageResult stagedResult = await StageUploadFileAsync(context, progressContext, cancellationToken);
 
@@ -450,7 +505,7 @@ namespace UploadBox.Services
                 _ => "The file could not be uploaded."
             };
 
-            FailUpload(message);
+            FailUpload(fileName, code, message);
 
             return new UploadFailed(fileName, code, message);
         }
@@ -461,6 +516,7 @@ namespace UploadBox.Services
         private UploadCancelled CreateCancelledResult(string fileName)
         {
             string message = $"Upload of '{fileName}' was cancelled.";
+            Logger.Info("Upload cancelled for {FileName}", fileName);
             CancelUpload(message);
             return new UploadCancelled(fileName);
         }
@@ -478,6 +534,7 @@ namespace UploadBox.Services
             UploadFileStats stats = new UploadFileStats(stagedFile.BytesWritten, context.WasOverwritten);
 
             CompleteUpload($"Uploaded '{context.File.Name}'.");
+            Logger.Info("Upload completed for {FileName}: {BytesWritten} bytes, overwritten={WasOverwritten}", context.SafeFileName, stagedFile.BytesWritten, context.WasOverwritten);
 
             return new UploadSucceeded(file, stats);
         }
@@ -489,6 +546,8 @@ namespace UploadBox.Services
         public void MarkFilesSelected(int fileCount)
         {
             Progress = null;
+
+            Logger.Debug("Selection changed: {SelectedFileCount} files selected", fileCount);
 
             if (fileCount <= 0)
             {
@@ -537,10 +596,12 @@ namespace UploadBox.Services
         /// <summary>
         /// Sets the controller state to error and publishes the supplied message.
         /// </summary>
-        private void FailUpload(string message)
+        private void FailUpload(string fileName, UploadFailureCode code, string message)
         {
             if (string.IsNullOrEmpty(message))
                 message = string.Empty;
+
+            Logger.Warn("Upload state changed from {PreviousStatus} to {NewStatus} for {FileName} with failure code {FailureCode}", Status, UploadBoxStatus.Error, fileName, code);
 
             Status = UploadBoxStatus.Error;
             StatusMessage = message;
@@ -618,7 +679,10 @@ namespace UploadBox.Services
         private void DeleteTemporaryFile(string temporaryPath)
         {
             if (File.Exists(temporaryPath))
+            {
+                Logger.Trace("Deleting temporary upload file {TemporaryPath}", temporaryPath);
                 File.Delete(temporaryPath);
+            }
         }
     }
 }

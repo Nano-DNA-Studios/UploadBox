@@ -1,5 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
+@using NLog
 @using global::UploadBox.Models
 @using global::UploadBox.Services
 @implements IDisposable
@@ -12,6 +13,8 @@
 </label>
 
 @code {
+
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
     /// Gets or sets the callback invoked with the files selected in the picker.
@@ -35,7 +38,10 @@
     protected override void OnInitialized()
     {
         if (Controller == null)
+        {
+            Logger.Error("UploadBox initialized without a required controller parameter");
             throw new InvalidOperationException("UploadBox requires an UploadBoxController parameter.");
+        }
 
         Controller.StateChanged += HandleControllerStateChanged;
     }
@@ -82,7 +88,15 @@
 
         Controller.MarkFilesSelected(files.Count);
 
-        await UploadRequested.InvokeAsync(new UploadRequest(files));
+        try
+        {
+            await UploadRequested.InvokeAsync(new UploadRequest(files));
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "UploadRequested callback failed for a selection of {SelectedFileCount} files", files.Count);
+            throw;
+        }
     }
 
     /// <summary>
