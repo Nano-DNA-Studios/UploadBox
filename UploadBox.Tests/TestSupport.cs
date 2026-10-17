@@ -11,6 +11,7 @@ internal sealed class TestBrowserFile : IBrowserFile
     /// Stores in-memory file content when no stream factory is provided.
     /// </summary>
     private readonly byte[]? content;
+
     /// <summary>
     /// Creates a content stream when the file uses deferred content.
     /// </summary>
@@ -51,14 +52,17 @@ internal sealed class TestBrowserFile : IBrowserFile
     /// Gets the name reported for the browser file.
     /// </summary>
     public string Name { get; }
+
     /// <summary>
     /// Gets the last-modified time reported for the browser file.
     /// </summary>
     public DateTimeOffset LastModified { get; }
+
     /// <summary>
     /// Gets the declared file size in bytes.
     /// </summary>
     public long Size { get; }
+
     /// <summary>
     /// Gets the content type reported for the browser file.
     /// </summary>
@@ -86,54 +90,67 @@ internal static class TestUpload
     /// Browser file with a valid lowercase ISO extension.
     /// </summary>
     public static readonly TestBrowserFile ValidIso = new("disk.iso", [1, 2, 3]);
+
     /// <summary>
     /// Browser file used as a normal upload source.
     /// </summary>
     public static readonly TestBrowserFile SourceIso = new("source.iso", [1, 2, 3]);
+
     /// <summary>
     /// One-byte browser file used for source-stream scenarios.
     /// </summary>
     public static readonly TestBrowserFile SourceOneByteIso = new("source.iso", [1]);
+
     /// <summary>
     /// One-byte browser file fixture.
     /// </summary>
     public static readonly TestBrowserFile OneByteIso = new("one.iso", [1]);
+
     /// <summary>
     /// Two-byte browser file fixture.
     /// </summary>
     public static readonly TestBrowserFile TwoByteIso = new("two.iso", [2]);
+
     /// <summary>
     /// Three-byte browser file fixture.
     /// </summary>
     public static readonly TestBrowserFile ThreeByteIso = new("three.iso", [3]);
+
     /// <summary>
     /// Nine-byte browser file fixture.
     /// </summary>
     public static readonly TestBrowserFile NineByteIso = new("a.iso", [9]);
+
     /// <summary>
     /// Browser file with an uppercase ISO extension.
     /// </summary>
     public static readonly TestBrowserFile UppercaseIso = new("one.ISO", [1]);
+
     /// <summary>
     /// Browser file with an unsupported extension.
     /// </summary>
     public static readonly TestBrowserFile WrongExtension = new("disk.bin", [1]);
+
     /// <summary>
     /// First browser file with an unsupported extension.
     /// </summary>
     public static readonly TestBrowserFile FirstWrongExtension = new("one.bin", [1]);
+
     /// <summary>
     /// Second browser file with an unsupported extension.
     /// </summary>
     public static readonly TestBrowserFile SecondWrongExtension = new("two.bin", [2]);
+
     /// <summary>
     /// Browser file whose size matches a configured limit.
     /// </summary>
     public static readonly TestBrowserFile ExactLimitIso = new("exact.iso", [1, 2]);
+
     /// <summary>
     /// Browser file larger than the configured test limit.
     /// </summary>
     public static readonly TestBrowserFile OversizedIso = new("large.iso", [1, 2, 3]);
+
     /// <summary>
     /// Zero-byte browser file fixture.
     /// </summary>
@@ -185,12 +202,16 @@ internal sealed class CancellationGateStream : Stream
 
     /// <inheritdoc/>
     public override bool CanRead => true;
+
     /// <inheritdoc/>
     public override bool CanSeek => false;
+
     /// <inheritdoc/>
     public override bool CanWrite => false;
+
     /// <inheritdoc/>
     public override long Length => throw new NotSupportedException();
+
     /// <inheritdoc/>
     public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
@@ -205,12 +226,16 @@ internal sealed class CancellationGateStream : Stream
 
     /// <inheritdoc/>
     public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
     /// <inheritdoc/>
     public override void Flush() => throw new NotSupportedException();
+
     /// <inheritdoc/>
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
     /// <inheritdoc/>
     public override void SetLength(long value) => throw new NotSupportedException();
+
     /// <inheritdoc/>
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }
