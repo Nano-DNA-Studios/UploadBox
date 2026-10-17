@@ -8,14 +8,23 @@ using UploadComponent = UploadBox.Pages.UploadBox;
 
 namespace UploadBox.Tests;
 
+/// <summary>
+/// Tests upload component rendering, file selection, drag-and-drop, and controller events.
+/// </summary>
 public class UploadBoxComponentTests : BunitContext
 {
+    /// <summary>
+    /// Tests render requires controller parameter.
+    /// </summary>
     [Test]
     public void Render_RequiresControllerParameter()
     {
         Assert.Throws<InvalidOperationException>(() => Render<UploadComponent>());
     }
 
+    /// <summary>
+    /// Tests render multiple selection shows drop instructions and enables multiple files.
+    /// </summary>
     [Test]
     public void Render_MultipleSelection_ShowsDropInstructionsAndEnablesMultipleFiles()
     {
@@ -32,6 +41,9 @@ public class UploadBoxComponentTests : BunitContext
         });
     }
 
+    /// <summary>
+    /// Tests render single selection shows drop instructions and restricts to single file.
+    /// </summary>
     [Test]
     public void Render_SingleSelection_ShowsDropInstructionsAndRestrictsToSingleFile()
     {
@@ -48,6 +60,9 @@ public class UploadBoxComponentTests : BunitContext
         });
     }
 
+    /// <summary>
+    /// Tests drag enter and leave toggle drag over class until all drags leave.
+    /// </summary>
     [Test]
     public void DragEnterAndLeave_ToggleDragOverClassUntilAllDragsLeave()
     {
@@ -66,6 +81,9 @@ public class UploadBoxComponentTests : BunitContext
         Assert.That(dropZone.ClassList.Contains("drag-over"), Is.False);
     }
 
+    /// <summary>
+    /// Tests drop clears drag over state.
+    /// </summary>
     [Test]
     public void Drop_ClearsDragOverState()
     {
@@ -79,6 +97,9 @@ public class UploadBoxComponentTests : BunitContext
         Assert.That(dropZone.ClassList.Contains("drag-over"), Is.False);
     }
 
+    /// <summary>
+    /// Tests file selection marks controller and invokes upload callback with all files.
+    /// </summary>
     [Test]
     public void FileSelection_MarksControllerAndInvokesUploadCallbackWithAllFiles()
     {
@@ -103,6 +124,9 @@ public class UploadBoxComponentTests : BunitContext
         });
     }
 
+    /// <summary>
+    /// Tests controller state change renders component and dispose unsubscribes.
+    /// </summary>
     [Test]
     public void ControllerStateChange_RendersComponentAndDisposeUnsubscribes()
     {

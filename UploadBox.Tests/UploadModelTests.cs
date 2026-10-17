@@ -3,8 +3,14 @@ using Microsoft.AspNetCore.Components.Forms;
 
 namespace UploadBox.Tests;
 
+/// <summary>
+/// Tests upload request, validation, context, and result model behavior.
+/// </summary>
 public class UploadModelTests
 {
+    /// <summary>
+    /// Tests upload request exposes files and count.
+    /// </summary>
     [Test]
     public void UploadRequest_ExposesFilesAndCount()
     {
@@ -15,6 +21,11 @@ public class UploadModelTests
         Assert.That(request.FileCount, Is.EqualTo(2));
     }
 
+    /// <summary>
+    /// Tests upload file validation result maps reason to acceptance.
+    /// </summary>
+    /// <param name="reason">Validation rejection reason supplied to the result.</param>
+    /// <param name="accepted">Whether the validation reason is expected to accept the file.</param>
     [TestCase(UploadRejectionReason.None, true)]
     [TestCase(UploadRejectionReason.EmptySelection, false)]
     [TestCase(UploadRejectionReason.TooManyFiles, false)]
@@ -36,6 +47,12 @@ public class UploadModelTests
         });
     }
 
+    /// <summary>
+    /// Tests upload validation result can upload requires unblocked accepted file.
+    /// </summary>
+    /// <param name="blocked">Whether the selection is blocked.</param>
+    /// <param name="accepted">Whether the validation reason is expected to accept the file.</param>
+    /// <param name="expected">Expected value for the supplied input.</param>
     [TestCase(false, false, false)]
     [TestCase(false, true, true)]
     [TestCase(true, true, false)]
@@ -49,6 +66,9 @@ public class UploadModelTests
         Assert.That(result.CanUpload, Is.EqualTo(expected));
     }
 
+    /// <summary>
+    /// Tests upload context new context uses full directory and detects existing file.
+    /// </summary>
     [Test]
     public void UploadContext_NewContextUsesFullDirectoryAndDetectsExistingFile()
     {
@@ -68,6 +88,9 @@ public class UploadModelTests
         });
     }
 
+    /// <summary>
+    /// Tests upload context new context reports new destination.
+    /// </summary>
     [Test]
     public void UploadContext_NewContextReportsNewDestination()
     {
@@ -78,6 +101,9 @@ public class UploadModelTests
         Assert.That(context.WasOverwritten, Is.False);
     }
 
+    /// <summary>
+    /// Tests upload result records retain values.
+    /// </summary>
     [Test]
     public void UploadResultRecords_RetainValues()
     {
