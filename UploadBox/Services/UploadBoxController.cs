@@ -3,30 +3,81 @@ using UploadBox.Models;
 
 namespace UploadBox.Services
 {
+    /// <summary>
+    /// Describes the current state of the upload component.
+    /// </summary>
     public enum UploadBoxStatus
     {
+        /// <summary>
+        /// No files are selected and no upload is active.
+        /// </summary>
         Idle,
+
+        /// <summary>
+        /// One or more files have been selected.
+        /// </summary>
         FileSelected,
+
+        /// <summary>
+        /// An upload is in progress.
+        /// </summary>
         Uploading,
+
+        /// <summary>
+        /// An upload completed successfully.
+        /// </summary>
         Completed,
+
+        /// <summary>
+        /// An upload was cancelled.
+        /// </summary>
         Cancelled,
+
+        /// <summary>
+        /// An upload encountered an error.
+        /// </summary>
         Error
     }
 
+    /// <summary>
+    /// Validates selected files, stages uploads, and exposes upload state and progress.
+    /// </summary>
     public sealed class UploadBoxController
     {
+        /// <summary>
+        /// Gets the options used to validate and stage uploads.
+        /// </summary>
         public UploadOptions Options { get; }
 
+        /// <summary>
+        /// Gets the current status message.
+        /// </summary>
         public string StatusMessage { get; private set; }
 
+        /// <summary>
+        /// Gets the current upload state.
+        /// </summary>
         public UploadBoxStatus Status { get; private set; }
 
+        /// <summary>
+        /// Gets the latest progress update, or <see langword="null"/> when no update is available.
+        /// </summary>
         public UploadProgress? Progress { get; private set; }
 
+        /// <summary>
+        /// Gets whether the controller is currently uploading a file.
+        /// </summary>
         public bool IsUploading => Status == UploadBoxStatus.Uploading;
 
+        /// <summary>
+        /// Occurs when the controller's observable state changes.
+        /// </summary>
         public event EventHandler? StateChanged;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="UploadBoxController"/>.
+        /// </summary>
+        /// <param name="options">Options to use, or <see langword="null"/> to use default options.</param>
         public UploadBoxController(UploadOptions? options = null)
         {
             Options = options ?? new UploadOptions();
@@ -35,14 +86,29 @@ namespace UploadBox.Services
             StatusMessage = string.Empty;
         }
 
+        /// <summary>
+        /// Raises <see cref="StateChanged"/> for the current controller state.
+        /// </summary>
         private void NotifyStateChanged() => StateChanged?.Invoke(this, EventArgs.Empty);
 
+        /// <summary>
+        /// Checks whether a file name is blank or equal to a dot or two dots.
+        /// </summary>
         private bool IsInvalidFileName(string fileName) => string.IsNullOrWhiteSpace(fileName) || fileName == "." || fileName == "..";
 
+        /// <summary>
+        /// Checks whether a directory path is blank or equal to two dots.
+        /// </summary>
         private bool IsInvalidDirectoryPath(string directory) => string.IsNullOrWhiteSpace(directory) || directory == "..";
 
+        /// <summary>
+        /// Checks whether the number of bytes written matches the browser-reported file size.
+        /// </summary>
         private bool IsValidUploadSize(IBrowserFile file, long bytesWritten) => file.Size == bytesWritten;
 
+        /// <summary>
+        /// Checks whether the file extension matches the configured extension, ignoring case.
+        /// </summary>
         private bool IsValidExtension(IBrowserFile file)
         {
             string fileExtension = Path.GetExtension(file.Name);
@@ -50,6 +116,9 @@ namespace UploadBox.Services
             return string.IsNullOrEmpty(Options.FileExtension) || string.Equals(fileExtension, Options.FileExtension, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Determines whether the configured policy blocks the selection based on its file outcomes.
+        /// </summary>
         private bool IsBlocked(UploadFileValidationResult[] fileResults)
         {
             bool hasRejections = fileResults.Any(file => !file.IsAccepted);
@@ -58,6 +127,13 @@ namespace UploadBox.Services
             return Options.Policy == UploadPolicy.Strict ? hasRejections : !hasAcceptedFiles;
         }
 
+        /// <summary>
+        /// Checks the file's validation result and creates a failure result when it is rejected.
+        /// </summary>
+        /// <param name="file">The browser file to validate.</param>
+        /// <param name="fileName">Destination name supplied by the caller; this helper validates the browser file.</param>
+        /// <param name="invalidResult">Receives the failure result when validation fails; otherwise receives <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> when the file passes validation; otherwise, <see langword="false"/>.</returns>
         private bool IsValidUploadFile(IBrowserFile file, string fileName, out UploadFileResult invalidResult)
         {
             UploadFileValidationResult validationResult = GetFileValidationResult(file);
@@ -79,6 +155,13 @@ namespace UploadBox.Services
             return false;
         }
 
+        /// <summary>
+        /// Converts a staging outcome into an upload result when staging did not succeed.
+        /// </summary>
+        /// <param name="context">Context for the file being uploaded.</param>
+        /// <param name="stageResult">Outcome returned by the staging operation.</param>
+        /// <param name="result">Receives a cancellation or failure result when staging did not succeed.</param>
+        /// <returns><see langword="true"/> when the file was staged successfully.</returns>
         private bool IsStagedSuccess(UploadContext context, StageResult stageResult, out UploadFileResult result)
         {
             if (stageResult is StageReady)
@@ -98,6 +181,9 @@ namespace UploadBox.Services
             return false;
         }
 
+        /// <summary>
+        /// Validates each file and rejects otherwise-valid files that exceed the configured count.
+        /// </summary>
         private UploadFileValidationResult[] FilterFiles(IReadOnlyList<IBrowserFile> files)
         {
             List<UploadFileValidationResult> fileResults = new List<UploadFileValidationResult>();
@@ -127,6 +213,9 @@ namespace UploadBox.Services
             return fileResults.ToArray();
         }
 
+        /// <summary>
+        /// Determines whether a file meets the configured extension and size limits.
+        /// </summary>
         private UploadFileValidationResult GetFileValidationResult(IBrowserFile file)
         {
             if (!IsValidExtension(file))
@@ -144,6 +233,11 @@ namespace UploadBox.Services
             return new UploadFileValidationResult(file, UploadRejectionReason.None, string.Empty);
         }
 
+        /// <summary>
+        /// Validates a selection and creates per-file outcomes and an overall upload decision.
+        /// </summary>
+        /// <param name="files">Browser files to validate.</param>
+        /// <returns>The per-file validation outcomes, blocking decision, and summary message.</returns>
         public UploadValidationResult ValidateFiles(IReadOnlyList<IBrowserFile> files)
         {
             if (files == null || files.Count == 0)
@@ -157,6 +251,13 @@ namespace UploadBox.Services
             return new UploadValidationResult(fileResults, isBlocked, message);
         }
 
+        /// <summary>
+        /// Copies a browser file to a temporary file and reports transfer progress before commit.
+        /// </summary>
+        /// <param name="context">File and destination information for the upload.</param>
+        /// <param name="progressContext">File position and byte offsets for the batch.</param>
+        /// <param name="cancellationToken">Token used to cancel the transfer.</param>
+        /// <returns>A staging outcome indicating success, cancellation, or failure.</returns>
         private async Task<StageResult> StageUploadFileAsync(UploadContext context, UploadBatchProgressContext progressContext, CancellationToken cancellationToken)
         {
             string? directoryPath = Path.GetDirectoryName(context.DestinationPath);
@@ -214,6 +315,13 @@ namespace UploadBox.Services
             }
         }
 
+        /// <summary>
+        /// Moves a staged file into its destination while detecting conflicts and access failures.
+        /// </summary>
+        /// <param name="context">File and destination information for the upload.</param>
+        /// <param name="stagedFile">Temporary file to commit.</param>
+        /// <param name="failureCode">Receives the failure code when the file cannot be committed.</param>
+        /// <returns><see langword="true"/> when the file is committed; otherwise, <see langword="false"/>.</returns>
         private bool TryCommitTemporaryFile(UploadContext context, StageReady stagedFile, out UploadFailureCode failureCode)
         {
             try
@@ -249,6 +357,9 @@ namespace UploadBox.Services
             }
         }
 
+        /// <summary>
+        /// Commits a staged file and deletes its temporary file when the commit fails.
+        /// </summary>
         private UploadFileResult CommitValidatedUpload(UploadContext context, StageReady stagedFile)
         {
             bool committed = false;
@@ -268,8 +379,26 @@ namespace UploadBox.Services
             }
         }
 
+        /// <summary>
+        /// Uploads a single browser file and reports progress as a one-file batch.
+        /// </summary>
+        /// <param name="file">Browser file to upload.</param>
+        /// <param name="fileName">Name to use at the destination.</param>
+        /// <param name="fullDirectoryPath">Directory in which to save the file.</param>
+        /// <param name="cancellationToken">Token used to cancel the upload.</param>
+        /// <returns>The success, cancellation, or failure result for the upload.</returns>
         public async Task<UploadFileResult> WriteUploadFile(IBrowserFile file, string fileName, string fullDirectoryPath, CancellationToken cancellationToken) => await WriteUploadFile(file, fileName, fullDirectoryPath, UploadBatchProgressContext.SingleFile(file.Size), cancellationToken);
 
+        /// <summary>
+        /// Validates, stages, and commits a browser file using the supplied batch progress context.
+        /// </summary>
+        /// <param name="file">Browser file to upload.</param>
+        /// <param name="fileName">Name to use at the destination.</param>
+        /// <param name="fullDirectoryPath">Directory in which to save the file.</param>
+        /// <param name="progressContext">File position and byte offsets for the batch.</param>
+        /// <param name="cancellationToken">Token used to cancel the upload.</param>
+        /// <returns>The success, cancellation, or failure result for the upload.</returns>
+        /// <exception cref="ArgumentException">Thrown when the batch total does not include the current file's size.</exception>
         public async Task<UploadFileResult> WriteUploadFile(IBrowserFile file, string fileName, string fullDirectoryPath, UploadBatchProgressContext progressContext, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -303,6 +432,9 @@ namespace UploadBox.Services
             return CommitValidatedUpload(context, (StageReady)stagedResult);
         }
 
+        /// <summary>
+        /// Updates the controller state and creates an upload failure result.
+        /// </summary>
         private UploadFailed CreateFailure(
             string fileName,
             UploadFailureCode code)
@@ -323,6 +455,9 @@ namespace UploadBox.Services
             return new UploadFailed(fileName, code, message);
         }
 
+        /// <summary>
+        /// Updates the controller state and creates a cancellation result.
+        /// </summary>
         private UploadCancelled CreateCancelledResult(string fileName)
         {
             string message = $"Upload of '{fileName}' was cancelled.";
@@ -330,6 +465,9 @@ namespace UploadBox.Services
             return new UploadCancelled(fileName);
         }
 
+        /// <summary>
+        /// Creates a success result from a committed staged file and updates the controller state.
+        /// </summary>
         private UploadSucceeded CreateSuccess(UploadContext context, StageReady stagedFile)
         {
             UploadFile file = new UploadFile(
@@ -344,6 +482,10 @@ namespace UploadBox.Services
             return new UploadSucceeded(file, stats);
         }
 
+        /// <summary>
+        /// Updates the controller state to reflect the number of files selected.
+        /// </summary>
+        /// <param name="fileCount">Number of selected files.</param>
         public void MarkFilesSelected(int fileCount)
         {
             Progress = null;
@@ -361,6 +503,9 @@ namespace UploadBox.Services
             NotifyStateChanged();
         }
 
+        /// <summary>
+        /// Sets the controller state to uploading and publishes the supplied message.
+        /// </summary>
         private void BeginUpload(string message = "Uploading...")
         {
             Status = UploadBoxStatus.Uploading;
@@ -368,6 +513,9 @@ namespace UploadBox.Services
             NotifyStateChanged();
         }
 
+        /// <summary>
+        /// Stores the latest progress and publishes the corresponding status message.
+        /// </summary>
         private void UpdateProgress(UploadProgress progress)
         {
             StatusMessage = $"Uploading '{progress.FileName}'.";
@@ -376,6 +524,9 @@ namespace UploadBox.Services
             NotifyStateChanged();
         }
 
+        /// <summary>
+        /// Sets the controller state to completed and publishes the supplied message.
+        /// </summary>
         private void CompleteUpload(string message = "Upload complete.")
         {
             Status = UploadBoxStatus.Completed;
@@ -383,6 +534,9 @@ namespace UploadBox.Services
             NotifyStateChanged();
         }
 
+        /// <summary>
+        /// Sets the controller state to error and publishes the supplied message.
+        /// </summary>
         private void FailUpload(string message)
         {
             if (string.IsNullOrEmpty(message))
@@ -393,6 +547,9 @@ namespace UploadBox.Services
             NotifyStateChanged();
         }
 
+        /// <summary>
+        /// Sets the controller state to cancelled and publishes the supplied message.
+        /// </summary>
         private void CancelUpload(string message = "Upload cancelled.")
         {
             Status = UploadBoxStatus.Cancelled;
@@ -400,6 +557,9 @@ namespace UploadBox.Services
             NotifyStateChanged();
         }
 
+        /// <summary>
+        /// Creates and publishes a progress update using the current batch offsets.
+        /// </summary>
         private void ReportProgress(string fileName, long bytesTransferred, long fileSizeBytes, UploadBatchProgressContext progressContext)
         {
             UploadProgress update = new(
@@ -413,6 +573,9 @@ namespace UploadBox.Services
             UpdateProgress(update);
         }
 
+        /// <summary>
+        /// Formats validation messages for rejected files and the overall selection decision.
+        /// </summary>
         private string CreateValidationMessage(int selectedCount, int acceptedCount, IReadOnlyList<UploadFileValidationResult> fileResults, bool isBlocked)
         {
             List<string> errors = new List<string>();
@@ -449,6 +612,9 @@ namespace UploadBox.Services
             return summary + Environment.NewLine + details;
         }
 
+        /// <summary>
+        /// Deletes the temporary file when it exists.
+        /// </summary>
         private void DeleteTemporaryFile(string temporaryPath)
         {
             if (File.Exists(temporaryPath))

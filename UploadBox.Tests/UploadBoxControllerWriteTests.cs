@@ -3,8 +3,14 @@ using UploadBox.Services;
 
 namespace UploadBox.Tests;
 
+/// <summary>
+/// Tests upload controller file writing, progress reporting, cancellation, and cleanup.
+/// </summary>
 public class UploadBoxControllerWriteTests
 {
+    /// <summary>
+    /// Tests write upload file when called sequentially writes every file and reports progress for each.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_WhenCalledSequentially_WritesEveryFileAndReportsProgressForEach()
     {
@@ -33,6 +39,9 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests write upload file with batch context reports file and aggregate progress.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_WithBatchContext_ReportsFileAndAggregateProgress()
     {
@@ -66,6 +75,9 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests write upload file with batch context rejects total smaller than current file and offset.
+    /// </summary>
     [Test]
     public void WriteUploadFile_WithBatchContext_RejectsTotalSmallerThanCurrentFileAndOffset()
     {
@@ -81,6 +93,9 @@ public class UploadBoxControllerWriteTests
             CancellationToken.None));
     }
 
+    /// <summary>
+    /// Tests write upload file writes new file and reports progress and completion.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_WritesNewFileAndReportsProgressAndCompletion()
     {
@@ -110,6 +125,9 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests write upload file creates missing destination directory.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_CreatesMissingDestinationDirectory()
     {
@@ -129,6 +147,9 @@ public class UploadBoxControllerWriteTests
         }
     }
 
+    /// <summary>
+    /// Tests write upload file overwrites an existing file.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_OverwritesAnExistingFile()
     {
@@ -146,6 +167,10 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests rejection of invalid destination file names.
+    /// </summary>
+    /// <param name="fileName">File name supplied to the upload operation.</param>
     [TestCase("")]
     [TestCase(null)]
     [TestCase(" ")]
@@ -161,6 +186,10 @@ public class UploadBoxControllerWriteTests
         Assert.That(result, Is.EqualTo(new UploadFailed("source.iso", UploadFailureCode.InvalidFileName, "The file name is invalid.")));
     }
 
+    /// <summary>
+    /// Tests rejection of invalid destination directories.
+    /// </summary>
+    /// <param name="path">Destination directory supplied to the upload operation.</param>
     [TestCase("")]
     [TestCase(" ")]
     [TestCase("..")] 
@@ -174,6 +203,9 @@ public class UploadBoxControllerWriteTests
         Assert.That(((UploadFailed)result).Code, Is.EqualTo(UploadFailureCode.DestinationUnavailable));
     }
 
+    /// <summary>
+    /// Tests write upload file pre cancelled token does not create file.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_PreCancelledTokenDoesNotCreateFile()
     {
@@ -191,6 +223,11 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests write upload file rejects invalid file before staging.
+    /// </summary>
+    /// <param name="fileName">File name supplied to the upload operation.</param>
+    /// <param name="code">Expected upload failure code.</param>
     [TestCase("source.bin", UploadFailureCode.InvalidExtension)]
     [TestCase("large.iso", UploadFailureCode.FileTooLarge)]
     public async Task WriteUploadFile_RejectsInvalidFileBeforeStaging(string fileName, UploadFailureCode code)
@@ -210,6 +247,9 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests write upload file rejects mismatch between declared and read bytes and cleans temporary file.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_RejectsMismatchBetweenDeclaredAndReadBytesAndCleansTemporaryFile()
     {
@@ -228,6 +268,9 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests write upload file rejects actual transfer above configured limit.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_RejectsActualTransferAboveConfiguredLimit()
     {
@@ -245,6 +288,9 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests write upload file sanitizes destination file name.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_SanitizesDestinationFileName()
     {
@@ -261,6 +307,9 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests write upload file maps stream failure and cleans temporary file.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_MapsStreamFailureAndCleansTemporaryFile()
     {
@@ -279,6 +328,9 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests write upload file cancellation during transfer returns cancelled and cleans temporary file.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_CancellationDuringTransferReturnsCancelledAndCleansTemporaryFile()
     {
@@ -302,6 +354,9 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests write upload file rejects destination created during staging as conflict.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_RejectsDestinationCreatedDuringStagingAsConflict()
     {
@@ -325,6 +380,9 @@ public class UploadBoxControllerWriteTests
         });
     }
 
+    /// <summary>
+    /// Tests write upload file allows zero length file and reports hundred percent.
+    /// </summary>
     [Test]
     public async Task WriteUploadFile_AllowsZeroLengthFileAndReportsHundredPercent()
     {

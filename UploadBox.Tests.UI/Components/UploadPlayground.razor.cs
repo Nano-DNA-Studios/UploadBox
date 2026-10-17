@@ -8,12 +8,18 @@ using UploadBox.Tests.UI;
 
 namespace UploadBox.Tests.UI.Components;
 
+/// <summary>
+/// Coordinates validation, upload processing, cancellation, and display state for the playground.
+/// </summary>
 public partial class UploadPlayground : IDisposable
 {
     private const long MaxFileSizeBytes = 512L * 1024 * 1024;
     private const int MaxBatchFileCount = 20;
     private const int UploadBufferSize = 128 * 1024;
 
+    /// <summary>
+    /// Gets or sets whether the playground accepts a multiple-file selection.
+    /// </summary>
     [Parameter]
     public bool AllowMultipleFiles { get; set; }
 
@@ -58,6 +64,9 @@ public partial class UploadPlayground : IDisposable
                 _ => "status-idle"
             };
 
+    /// <summary>
+    /// Creates the controller using the current single-file or batch settings and subscribes to state changes.
+    /// </summary>
     protected override void OnInitialized()
     {
         UploadOptions options = new(
@@ -70,6 +79,10 @@ public partial class UploadPlayground : IDisposable
         Controller.StateChanged += HandleControllerStateChanged;
     }
 
+    /// <summary>
+    /// Validates the selection, uploads accepted files sequentially, and records their outcomes.
+    /// </summary>
+    /// <param name="request">Selected files to validate and process.</param>
     private async Task HandleUploadRequested(UploadRequest request)
     {
         if (_isProcessing)
@@ -207,6 +220,9 @@ public partial class UploadPlayground : IDisposable
         }
     }
 
+    /// <summary>
+    /// Requests cancellation of the active upload batch.
+    /// </summary>
     private void CancelUpload()
     {
         if (!_isProcessing || _uploadCancellation is null || _cancelRequested)
@@ -226,6 +242,9 @@ public partial class UploadPlayground : IDisposable
         }
     }
 
+    /// <summary>
+    /// Applies controller progress updates to the active file and refreshes the component.
+    /// </summary>
     private void HandleControllerStateChanged(object? sender, EventArgs eventArgs)
     {
         UploadProgress? progress = Controller.Progress;
@@ -253,6 +272,9 @@ public partial class UploadPlayground : IDisposable
 
     private static string FormatBytes(long bytes) => UploadPlaygroundFormatting.FormatBytes(bytes);
 
+    /// <summary>
+    /// Unsubscribes from controller updates and cancels any active transfer.
+    /// </summary>
     public void Dispose()
     {
         if (Controller is not null)

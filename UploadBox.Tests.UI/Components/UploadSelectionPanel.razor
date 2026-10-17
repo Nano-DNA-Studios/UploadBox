@@ -1,3 +1,6 @@
+@*
+Displays file selection controls, upload status, cancellation, and overall progress.
+*@
 @using System.Globalization
 @using Microsoft.AspNetCore.Components.Forms
 @using global::UploadBox.Models
@@ -51,39 +54,75 @@
 </section>
 
 @code {
+    /// <summary>
+    /// Gets or sets the upload controller shared with the embedded <see cref="UploadBoxController"/> component.
+    /// </summary>
     [Parameter, EditorRequired]
     public UploadBoxController Controller { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets whether the file picker allows selecting multiple files.
+    /// </summary>
     [Parameter]
     public bool AllowMultipleFiles { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback invoked when an upload is requested for the selected files.
+    /// </summary>
     [Parameter]
     public EventCallback<UploadRequest> UploadRequested { get; set; }
 
+    /// <summary>
+    /// Gets or sets the per-file size limit label displayed in the panel.
+    /// </summary>
     [Parameter]
     public string MaxFileSizeLabel { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the server-side upload directory displayed in the panel.
+    /// </summary>
     [Parameter]
     public string UploadDirectory { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the CSS class applied to the upload status indicator.
+    /// </summary>
     [Parameter]
     public string StatusClass { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the upload status message displayed beside the indicator.
+    /// </summary>
     [Parameter]
     public string StatusText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets whether an upload is currently being processed.
+    /// </summary>
     [Parameter]
     public bool IsProcessing { get; set; }
 
+    /// <summary>
+    /// Gets or sets whether cancellation has been requested for the current upload.
+    /// </summary>
     [Parameter]
     public bool CancelRequested { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback invoked when the user requests upload cancellation.
+    /// </summary>
     [Parameter]
     public EventCallback CancelUpload { get; set; }
 
+    /// <summary>
+    /// Gets or sets the overall upload progress percentage displayed for the selection.
+    /// </summary>
     [Parameter]
     public double SelectedUploadProgress { get; set; }
 
+    /// <summary>
+    /// Gets or sets the name of the file currently being processed, or <see langword="null"/> when none is active.
+    /// </summary>
     [Parameter]
     public string? CurrentFileName { get; set; }
 }
