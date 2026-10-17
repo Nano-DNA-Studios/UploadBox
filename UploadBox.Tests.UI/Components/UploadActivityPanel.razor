@@ -1,0 +1,31 @@
+<section class="playground-card activity-card" aria-labelledby="activity-title">
+    <div class="card-heading">
+        <div>
+            <p class="eyebrow">Activity</p>
+            <h2 id="activity-title">Process messages</h2>
+        </div>
+        <span class="result-count">@Messages.Count</span>
+    </div>
+
+    @if (Messages.Count == 0)
+    {
+        <p class="activity-empty">Messages from selection through completion will be collected here.</p>
+    }
+    else
+    {
+        <ol class="activity-log" aria-live="polite" aria-relevant="additions text">
+            @foreach (ActivityMessage message in Messages)
+            {
+                <li class="activity-message @message.KindClass">
+                    <time>@message.Timestamp</time>
+                    <span>@message.Text</span>
+                </li>
+            }
+        </ol>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<ActivityMessage> Messages { get; set; } = [];
+}

@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.37628.2 d17.14
+VisualStudioVersion = 17.14.37628.2
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UploadBox", "UploadBox\UploadBox.csproj", "{3066CB48-C483-4C33-A94D-3784C09C7686}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UploadBox.Tests", "UploadBox.Tests\UploadBox.Tests.csproj", "{90DE4F67-B9BF-4BC9-BF58-D9961CE1376F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UploadBox.Tests.UI", "UploadBox.Tests.UI\UploadBox.Tests.UI.csproj", "{A4D84611-943E-4142-9BE2-BD9B42B113ED}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{3066CB48-C483-4C33-A94D-3784C09C7686}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3066CB48-C483-4C33-A94D-3784C09C7686}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3066CB48-C483-4C33-A94D-3784C09C7686}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90DE4F67-B9BF-4BC9-BF58-D9961CE1376F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90DE4F67-B9BF-4BC9-BF58-D9961CE1376F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90DE4F67-B9BF-4BC9-BF58-D9961CE1376F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90DE4F67-B9BF-4BC9-BF58-D9961CE1376F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4D84611-943E-4142-9BE2-BD9B42B113ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4D84611-943E-4142-9BE2-BD9B42B113ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4D84611-943E-4142-9BE2-BD9B42B113ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4D84611-943E-4142-9BE2-BD9B42B113ED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

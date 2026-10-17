@@ -1,0 +1,28 @@
+<section class="upload-playground">
+    <header class="playground-header">
+        <p class="eyebrow">UploadBox visual playground</p>
+        <h1>@(AllowMultipleFiles ? "Multiple file upload" : "Single file upload")</h1>
+        <p class="playground-intro">
+            @(AllowMultipleFiles
+                ? "Choose a batch to see validation, per-file results, and aggregate progress. Files are uploaded one at a time."
+                : "Choose one file to see the upload interaction, progress updates, and final result.")
+        </p>
+    </header>
+
+    <div class="playground-grid">
+        <UploadSelectionPanel Controller="@Controller"
+                              AllowMultipleFiles="@AllowMultipleFiles"
+                              UploadRequested="@HandleUploadRequested"
+                              MaxFileSizeLabel="@MaxFileSizeLabel"
+                              UploadDirectory="@UploadDirectory"
+                              StatusClass="@StatusClass"
+                              StatusText="@StatusText"
+                              IsProcessing="@_isProcessing"
+                              CancelRequested="@_cancelRequested"
+                              CancelUpload="@CancelUpload"
+                              SelectedUploadProgress="@SelectedUploadProgress"
+                              CurrentFileName="@_currentFileName" />
+        <UploadResultsPanel Items="@_uploadItems" AllowMultipleFiles="@AllowMultipleFiles" />
+        <UploadActivityPanel Messages="@_messages" />
+    </div>
+</section>

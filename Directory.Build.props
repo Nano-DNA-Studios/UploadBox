@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+	<!-- Import Parent Directory.Build.Props if Submodule -->
+	<Import Project="$(MSBuildThisFileDirectory)..\..\Directory.Build.props"
+      Condition="Exists('$(MSBuildThisFileDirectory)..\..\Directory.Build.props')" />
+	
+	<!-- Project Owner and Version Metadata -->
+	<PropertyGroup>
+		<Company>NanoDNA Studios</Company>
+		<Copyright>NanoDNA Studios</Copyright>
+		<Authors>NanoDNA Studios, MrDNAlex</Authors>
+		<Version>0.0.0</Version>
+	</PropertyGroup>
+
+	<!-- Repo Info -->
+	<PropertyGroup>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/Nano-DNA-Studios/UploadBox</RepositoryUrl>
+	</PropertyGroup>
+
+	<!-- Project Configuration Metadata -->
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<RuntimeIdentifiers>win-x64;win-x86;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
+		<Configurations>Debug;Release</Configurations>
+		<Platforms>AnyCPU;x64;x86;ARM64;ARM32</Platforms>
+	</PropertyGroup>
+	
+	<!-- Building / Publishing Metadata -->
+	<PropertyGroup>
+		<PackageOutputPath>$(SolutionDir)nupkg</PackageOutputPath>
+	</PropertyGroup>
+	
+	<!-- Miscellanious -->
+	<PropertyGroup>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<EnableDefaultCompileItems>True</EnableDefaultCompileItems>
+		<EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+		<CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+	</PropertyGroup>
+	
+</Project>
+
+

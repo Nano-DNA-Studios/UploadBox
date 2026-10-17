@@ -1,0 +1,54 @@
+@using System.Globalization
+@using global::UploadBox.Models
+
+<section class="playground-card results-card" aria-labelledby="results-title">
+    <div class="card-heading">
+        <div>
+            <p class="eyebrow">Results</p>
+            <h2 id="results-title">Files in this session</h2>
+        </div>
+        <span class="result-count">@Items.Count</span>
+    </div>
+
+    @if (Items.Count == 0)
+    {
+        <div class="empty-state">
+            <span class="empty-state-icon" aria-hidden="true">⇧</span>
+            <p>Your selected files and their results will appear here.</p>
+        </div>
+    }
+    else
+    {
+        <ul class="upload-results">
+            @foreach (UploadDisplayItem item in Items)
+            {
+                <li class="upload-result">
+                    <span class="result-icon @item.StatusClass" aria-hidden="true">@item.StatusIcon</span>
+                    <span class="result-details">
+                        <strong title="@item.FileName">@item.FileName</strong>
+                        <small>@UploadPlaygroundFormatting.FormatBytes(item.FileSize) · @item.Message</small>
+                        @if (AllowMultipleFiles && item.Progress is not null)
+                        {
+                            <span class="file-progress" aria-label="Progress for @item.FileName">
+                                <span class="file-progress-label">
+                                    <span>@UploadPlaygroundFormatting.FormatBytes(item.BytesTransferred) / @UploadPlaygroundFormatting.FormatBytes(item.FileSize)</span>
+                                    <span>@item.FilePercentage.ToString("0", CultureInfo.InvariantCulture)%</span>
+                                </span>
+                                <progress value="@item.FilePercentage" max="100" aria-label="@item.FileName upload progress"></progress>
+                            </span>
+                        }
+                    </span>
+                    <span class="result-status @item.StatusClass">@item.Status</span>
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<UploadDisplayItem> Items { get; set; } = [];
+
+    [Parameter]
+    public bool AllowMultipleFiles { get; set; }
+}
