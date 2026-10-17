@@ -1,0 +1,182 @@
+NanoDNA Community License 1.0
+
+Copyright (c) 2026 NanoDNA Studios
+
+This license applies only to the materials identified as covered by it in the repository, package, or notice that accompanies those materials. It does not replace any license that applies to third-party materials.
+
+This is a source-available license and is not an OSI-approved open-source license. It permits certain individuals and small businesses to use and modify the Software under the conditions below. It does not authorize redistribution to another person or entity unless that recipient first obtains separate written authorization from the Licensor. Businesses above the stated thresholds and Institutional Users must also obtain separate written authorization.
+
+1. Definitions
+
+1.1 “Licensor” means NanoDNA Studios.
+
+1.2 “Software” means the software and other materials owned or controlled by the Licensor and specifically identified as covered by this license, including source code, object code, documentation, examples, scripts, configuration files, and original assets. Software does not include third-party materials separately identified or licensed. Third-party materials remain subject to their own terms.
+
+1.3 “Project” means the product, application, service, internal system, or other activity that uses, incorporates, or is operated using the Software. The Project must be identified in the applicable repository, package, or accompanying notice. If no Project is identified, each distinct product, service, or internal system that uses the Software is a separate Project.
+
+1.4 “Business” means a for-profit company, corporation, partnership, sole proprietorship, or other organization or person conducting a profit-seeking activity, and includes a Project owned, controlled, or operated by it. A person using the Software as part of their work for a Business is acting on behalf of that Business, even if the person is not an employee.
+
+1.5 “Related Entity” means an entity that controls, is controlled by, or is under common control with a Business. “Control” means direct or indirect ownership of more than 50 percent of voting interests, or other power to direct the entity’s management or operations.
+
+1.6 “People” means each employee and individual contractor working for or on behalf of the Business or any Related Entity. Each person counts as one, regardless of hours worked. A contractor’s employees count as People if they work on behalf of the Business or a Related Entity.
+
+1.7 “Project Revenue” means gross amounts received during the applicable preceding rolling twelve-month period that are directly attributable to the Project, including revenue from sales, subscriptions, paid features, advertising, sponsorships, or paid services connected with the Project. Project Revenue is calculated before expenses and excludes sales taxes collected for remittance and amounts actually refunded to customers. For bundled offerings, only the portion reasonably attributable to the Project is counted. Revenue in another currency must be converted to United States dollars using a consistently applied exchange-rate source and method.
+
+1.8 “Qualifying Small Business” means a Business that, together with its Related Entities:
+
+(a) has no more than 20 People; and
+
+(b) operates a Project with no more than USD $10,000 in Project Revenue during the preceding rolling twelve-month period.
+
+A Business qualifies only while it satisfies both conditions.
+
+1.9 “Institutional User” means a nonprofit organization, school, college, university, research institution, government agency, or other public-sector organization, and any person using the Software on behalf of one of them.
+
+1.10 “You” means the individual or Business exercising rights under this license. An individual acting on behalf of a Business exercises rights only on that Business’s behalf; the individual does not receive a separate personal grant for that use.
+
+1.11 “Separate Written Authorization” means a license or other authorization in a written record issued by the Licensor and expressly accepted by the Licensor. A request, discussion, invoice, or silence is not authorization.
+
+2. Community License Grant
+
+2.1 Subject to this license, the Licensor grants You a worldwide, non-exclusive, royalty-free, non-transferable license to use, reproduce, modify, and create derivative works of the Software, but only if You are either:
+
+(a) an individual using the Software solely for personal, hobby, educational, or research purposes outside the work or operations of a Business or Institutional User; or
+
+(b) a Qualifying Small Business using the Software solely for its own Project.
+
+2.2 The rights in Section 2.1 include developing, testing, and operating Your own applications or products that use or incorporate the Software, including for payment, while You remain eligible and comply with this license.
+
+2.3 This license does not grant the right to distribute, sublicense, publish, transfer, or otherwise provide the Software, a modified version, or a derivative work containing or based on the Software to another person or entity. Each proposed recipient must first obtain Separate Written Authorization from the Licensor. You must not provide a copy or access before that authorization is in place.
+
+2.4 This license does not authorize use by or on behalf of a Business that does not qualify under Section 1.8, or by an Institutional User, except for the limited transition permissions in Section 5 or a Separate Written Authorization.
+
+2.5 No rights are granted by implication, estoppel, exhaustion, or otherwise beyond those expressly stated in this license.
+
+3. Business and Project Thresholds
+
+3.1 A Business must obtain Separate Written Authorization before continuing use if either:
+
+(a) the Business and its Related Entities have more than 20 People; or
+
+(b) the Project has more than USD $10,000 in Project Revenue during the preceding rolling twelve-month period.
+
+3.2 The People threshold applies to the Business and its Related Entities as a whole, not only to the team working on the Project. The Project Revenue threshold applies to the Project and does not include revenue from unrelated projects, except to the extent it is attributable to the Project under Section 1.7.
+
+3.3 Exceeding either threshold makes the Business ineligible for the community grant even if it remains below the other threshold. The transition period in Section 5 is temporary permission only; it does not make the Business a Qualifying Small Business.
+
+3.4 You are responsible for monitoring eligibility. The Licensor may request reasonable information necessary to confirm eligibility, but this license does not require You to provide personal information beyond what is reasonably necessary for that purpose.
+
+4. Institutional Users
+
+4.1 An Institutional User must obtain Separate Written Authorization before using the Software, except for the temporary permission in Section 5.3.
+
+4.2 The Licensor may decide case by case whether institutional authorization is free or paid and may set its scope, duration, and conditions in writing.
+
+4.3 A request for authorization alone does not grant permission. Any temporary permission while a request is considered is limited to Section 5.3.
+
+5. Temporary Transition and Pending Requests
+
+5.1 Business threshold transition. A Business that first exceeds a threshold in Section 3 may continue using the Software for up to 60 calendar days beginning on the date it first exceeds that threshold, provided it:
+
+(a) gives the Licensor written notice and requests Separate Written Authorization within 30 calendar days after that date; and
+
+(b) continues to comply with this license and does not distribute the Software or provide it to another person or entity.
+
+The 60-day period is a maximum total period measured from the date the threshold was first exceeded. A request or negotiation does not extend it.
+
+5.2 If no request is made. If the Business does not submit its request within the 30-day period, its temporary permission ends at the end of that 30-day period.
+
+5.3 Institutional pending request. An Institutional User that submits a complete written request may use the Software for up to 60 calendar days beginning when the Licensor receives the request, solely for the Project described in it, provided the Institutional User complies with this license and does not distribute the Software or provide it to another person or entity. The Licensor may request reasonable additional information; the 60-day period is not extended by that request.
+
+5.4 End of temporary permission. Temporary permission under this Section ends at the applicable deadline, when Separate Written Authorization takes effect, or when the Licensor gives written notice that the request is denied, whichever occurs first. Negotiations, a delayed response, or a pending request do not extend the deadline. No authorization is granted unless stated in a Separate Written Authorization.
+
+5.5 When temporary permission ends without Separate Written Authorization, You must stop all use that is not otherwise permitted by this license. You may retain archival copies solely as required by law or for routine backup, but must not access or use them.
+
+6. Commercial Licenses and Additional Services
+
+Commercial authorization terms, including fees, scope, duration, and permitted use, must be set out in a Separate Written Authorization. The parties may separately agree in writing on development, custom features, support, consulting, maintenance, or other services. Those services are not included in this license unless the separate agreement says so.
+
+7. Third-Party Materials
+
+7.1 This license applies only to Software owned or controlled by the Licensor and identified as covered. Third-party software, libraries, assets, fonts, media, data, models, and other materials are excluded unless the Licensor expressly identifies them as covered.
+
+7.2 Third-party materials remain subject to their own license terms. Those terms govern the third-party materials and are not changed by this license. If a third-party license permits rights that this license does not, that permission applies only to the third-party material.
+
+8. Contributions
+
+8.1 A contribution is not accepted or licensed to the Licensor merely because it is submitted, discussed, or made available.
+
+8.2 Before incorporating a contribution, the contributor and Licensor must agree in a separate written record on the copyright permissions, any patent permissions, attribution, payment or revenue sharing, and other applicable terms. Unless that record says otherwise, the contributor retains ownership of the contribution.
+
+8.3 The Licensor may identify contributors as authors in project documentation or notices where appropriate and consistent with the written agreement.
+
+9. Patent Rights
+
+No patent rights are granted under this license, whether by express grant, implication, estoppel, exhaustion, or otherwise. Patent rights, if any, must be addressed expressly in Separate Written Authorization.
+
+10. Trademarks
+
+This license does not grant permission to use the Licensor’s names, trademarks, logos, or branding, except to make accurate factual statements identifying the origin of the Software.
+
+11. Ownership
+
+The Software is licensed, not sold. The Licensor and its licensors retain all rights in the Software not expressly granted by this license. You retain ownership of Your original contributions and modifications to the extent permitted by law, subject to the Licensor’s rights in the underlying Software and the restrictions in this license.
+
+12. Compliance Notice, Cure, and Termination
+
+12.1 If the Licensor sends You written notice identifying a violation, You have seven calendar days from receipt of the notice to cure it, unless the violation cannot reasonably be cured within that period. If it cannot be cured within seven days, You must begin promptly and complete the cure within a reasonable period, while the Licensor may suspend the affected permission in writing.
+
+12.2 If You do not cure a curable violation as required, Your rights under this license terminate automatically. The Licensor may reinstate them in writing.
+
+12.3 Temporary permissions under Section 5 are not violations while their stated conditions and time limits are met.
+
+12.4 Termination does not affect rights that cannot lawfully be terminated or provisions that by their nature continue, including ownership, disclaimers, liability limitations, and governing law.
+
+13. No Warranty
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, OR NON-INFRINGEMENT. THE LICENSOR DOES NOT WARRANT THAT THE SOFTWARE WILL BE ERROR-FREE, SECURE, UNINTERRUPTED, OR SUITABLE FOR YOUR PURPOSES.
+
+14. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE LICENSOR AND CONTRIBUTORS WILL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THIS LICENSE, WHETHER IN CONTRACT, TORT, OR OTHERWISE. THIS INCLUDES DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES; LOSS OF PROFITS, REVENUE, DATA, OR BUSINESS; BUSINESS INTERRUPTION; SECURITY INCIDENTS; SYSTEM FAILURE; OR COSTS OF SUBSTITUTE GOODS OR SERVICES.
+
+15. Governing Law and Courts
+
+This license is governed by the laws of the Province of Ontario and the applicable laws of Canada, without regard to conflict-of-law rules. The parties submit to the courts located in Ontario, Canada, for disputes arising from or relating to this license or the Software, subject to mandatory rights or rules that apply by law.
+
+16. General Terms
+
+16.1 Entire agreement. This license states the entire agreement between You and the Licensor concerning its subject matter, except for a Separate Written Authorization that expressly supplements or replaces it.
+
+16.2 Severability. If a provision is found unenforceable, it will be modified only to the minimum extent necessary to make it enforceable, and the remaining provisions will remain in effect.
+
+16.3 No waiver. A failure or delay in enforcing a provision is not a waiver of that provision.
+
+16.4 Assignment. You may not assign this license or any rights under it without the Licensor’s prior written consent. The Licensor may assign this license as part of a transfer of the Software or substantially all of the relevant business or assets.
+
+16.5 Notices. Notices under this license must be sent in writing to the contact details in Section 18, or to an updated address the Licensor designates in writing. A notice to You may be sent to the email address or other contact information You provide with a request or authorization.
+
+16.6 Changes. The Licensor may publish updated terms for future versions. A version of the Software received under this license remains governed by the version of the license accompanying that version, unless You separately accept a later version or a Separate Written Authorization says otherwise.
+
+17. Version and Covered Materials
+
+The applicable license version is the version included with or expressly identified for the copy of the Software You received. The repository, package, or accompanying notice must identify the covered materials and license version. If materials are not identified as covered, this license does not apply to them.
+
+18. Contact
+
+For commercial or institutional authorization, or questions about this license, contact:
+
+NanoDNA Studios
+Mr.DNAlexandre@gmail.com
+
+
+SIGNED FOR THE LICENSOR
+
+Licensor’s legal name: Alexandre Dufresne-Nappert
+Operating as (if applicable): NanoDNA Studios
+
+Signature: /s/ Alexandre Dufresne-Nappert
+Name: Alexandre Dufresne-Nappert
+Capacity or authority: Sole proprietor
+Date: 2026-10-16
+License version: 1.0
