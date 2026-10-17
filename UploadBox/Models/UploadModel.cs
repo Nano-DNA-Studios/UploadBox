@@ -36,18 +36,22 @@ namespace UploadBox.Models
         /// File was not rejected for the upload.
         /// </summary>
         None,
+
         /// <summary>
         /// All files have been rejected.
         /// </summary>
         EmptySelection,
+
         /// <summary>
         /// File exceeds configured upload limit.
         /// </summary>
         TooManyFiles,
+
         /// <summary>
         /// File exceeds the configured size limit.
         /// </summary>
         FileTooLarge,
+
         /// <summary>
         /// File uses an invalid extension.
         /// </summary>
@@ -151,10 +155,12 @@ namespace UploadBox.Models
         /// File was uploaded successfully.
         /// </summary>
         Success,
+
         /// <summary>
         /// File upload was cancelled.
         /// </summary>
         Cancelled,
+
         /// <summary>
         /// File upload experienced an erorr and failed.
         /// </summary>
@@ -300,26 +306,32 @@ namespace UploadBox.Models
         /// File name is invalid.
         /// </summary>
         InvalidFileName,
+
         /// <summary>
         /// File uses an invalid extensions.
         /// </summary>
         InvalidExtension,
+
         /// <summary>
         /// File exceeds the configured size limit.
         /// </summary>
         FileTooLarge,
+
         /// <summary>
         /// Number of bytes read does not match the browser-reported file size. 
         /// </summary>
         SizeMismatch,
+
         /// <summary>
         /// A failure occurred while transferring the file to a temporary file.
         /// </summary>
         TransferFailed,
+
         /// <summary>
         /// Destination changed after the upload context was created and could not be committed.
         /// </summary>
         DestinationConflict,
+
         /// <summary>
         /// The destination directory or file could not be accessed.
         /// </summary>

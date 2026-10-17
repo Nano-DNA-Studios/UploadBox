@@ -10,6 +10,7 @@ namespace UploadBox.Models
         /// Blocks the upload when any selected file is rejected.
         /// </summary>
         Strict,
+
         /// <summary>
         /// Allows accepted files to be uploaded while preventing the rejected files.
         /// </summary>

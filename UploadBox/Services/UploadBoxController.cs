@@ -12,22 +12,27 @@ namespace UploadBox.Services
         /// No files are selected and no upload is active.
         /// </summary>
         Idle,
+
         /// <summary>
         /// One or more files have been selected.
         /// </summary>
         FileSelected,
+
         /// <summary>
         /// An upload is in progress.
         /// </summary>
         Uploading,
+
         /// <summary>
         /// An upload completed successfully.
         /// </summary>
         Completed,
+
         /// <summary>
         /// An upload was cancelled.
         /// </summary>
         Cancelled,
+
         /// <summary>
         /// An upload encountered an error.
         /// </summary>
