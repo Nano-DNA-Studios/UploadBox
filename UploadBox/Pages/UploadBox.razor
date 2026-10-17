@@ -4,6 +4,7 @@
 @using global::UploadBox.Services
 @implements IDisposable
 
+@* Presents the upload file picker and visual drop zone, and raises UploadRequested for selected files. *@
 <label class="upload-drop-zone flex-fill @(IsDragOver ? "drag-over" : "")" @ondragenter="HandleDragEnter" @ondragleave="HandleDragLeave" @ondragover:preventDefault @ondrop="HandleDrop">
     <InputFile class="upload-input" OnChange="HandleFileUpload" disabled="@Controller.IsUploading" multiple="@Controller.Options.AllowMultipleFiles" />
     <span class="upload-title">Drop @(Controller.Options.AllowMultipleFiles ? "files" : "a file") here</span>
@@ -12,9 +13,15 @@
 
 @code {
 
+    /// <summary>
+    /// Gets or sets the callback invoked with the files selected in the picker.
+    /// </summary>
     [Parameter]
     public EventCallback<UploadRequest> UploadRequested { get; set; }
 
+    /// <summary>
+    /// Gets or sets the controller that supplies upload options and selection state.
+    /// </summary>
     [Parameter, EditorRequired]
     public UploadBoxController Controller { get; set; } = null!;
 
@@ -22,6 +29,9 @@
 
     private int dragCounter;
 
+    /// <summary>
+    /// Validates the required controller parameter and subscribes to its state changes.
+    /// </summary>
     protected override void OnInitialized()
     {
         if (Controller == null)
@@ -30,12 +40,18 @@
         Controller.StateChanged += HandleControllerStateChanged;
     }
 
+    /// <summary>
+    /// Marks the drop zone as active while tracking nested drag-enter events.
+    /// </summary>
     private void HandleDragEnter(DragEventArgs _)
     {
         dragCounter++;
         IsDragOver = true;
     }
 
+    /// <summary>
+    /// Clears the active drop-zone state after the last tracked drag-leave event.
+    /// </summary>
     private void HandleDragLeave(DragEventArgs _)
     {
         dragCounter--;
@@ -47,12 +63,19 @@
         }
     }
 
+    /// <summary>
+    /// Resets drag tracking when a drop event occurs.
+    /// </summary>
     private void HandleDrop(DragEventArgs _)
     {
         dragCounter = 0;
         IsDragOver = false;
     }
 
+    /// <summary>
+    /// Reports the selected file count to the controller and invokes the upload callback.
+    /// </summary>
+    /// <param name="e">File-picker change event containing the selected files.</param>
     private async Task HandleFileUpload(InputFileChangeEventArgs e)
     {
         IReadOnlyList<IBrowserFile> files = e.GetMultipleFiles(int.MaxValue);
@@ -62,11 +85,19 @@
         await UploadRequested.InvokeAsync(new UploadRequest(files));
     }
 
+    /// <summary>
+    /// Schedules a component render after the controller reports a state change.
+    /// </summary>
+    /// <param name="sender">The event source.</param>
+    /// <param name="e">Event arguments supplied by the controller.</param>
     private void HandleControllerStateChanged(object? sender, EventArgs e)
     {
         _ = InvokeAsync(StateHasChanged);
     }
 
+    /// <summary>
+    /// Removes the controller state-change subscription.
+    /// </summary>
     public void Dispose()
     {
         if (Controller is not null)
