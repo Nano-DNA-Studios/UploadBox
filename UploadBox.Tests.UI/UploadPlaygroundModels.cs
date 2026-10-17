@@ -12,30 +12,37 @@ public sealed class UploadDisplayItem(IBrowserFile file, string fileName, long f
     /// Gets the selected browser file.
     /// </summary>
     public IBrowserFile File { get; } = file;
+
     /// <summary>
     /// Gets the file name displayed in the results.
     /// </summary>
     public string FileName { get; } = fileName;
+
     /// <summary>
     /// Gets the declared file size in bytes.
     /// </summary>
     public long FileSize { get; } = fileSize;
+
     /// <summary>
     /// Gets the current display status for the file.
     /// </summary>
     public string Status { get; private set; } = status;
+
     /// <summary>
     /// Gets the message associated with the current status.
     /// </summary>
     public string Message { get; private set; } = message;
+
     /// <summary>
     /// Gets the most recent upload progress, when available.
     /// </summary>
     public UploadProgress? Progress { get; private set; }
+
     /// <summary>
     /// Gets the transferred byte count, or zero before progress is available.
     /// </summary>
     public long BytesTransferred => Progress?.BytesTransferred ?? 0;
+
     /// <summary>
     /// Gets the file completion percentage, or zero before progress is available.
     /// </summary>
