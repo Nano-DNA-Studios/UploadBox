@@ -2,27 +2,6 @@
 namespace UploadBox.Models
 {
     /// <summary>
-    /// Identifies the outcome category for an uploaded file.
-    /// </summary>
-    public enum UploadFileResultStatus
-    {
-        /// <summary>
-        /// File was uploaded successfully.
-        /// </summary>
-        Success,
-
-        /// <summary>
-        /// File upload was cancelled.
-        /// </summary>
-        Cancelled,
-
-        /// <summary>
-        /// File upload experienced an erorr and failed.
-        /// </summary>
-        Error
-    }
-
-    /// <summary>
     /// Describes the original and saved names and path of an uploaded file.
     /// </summary>
     /// <param name="OriginiOriginalFileName">Name reported for the original browser file.</param>
