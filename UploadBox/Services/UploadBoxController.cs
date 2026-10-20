@@ -443,6 +443,7 @@ namespace UploadBox.Services
         {
             if (cancellationToken.IsCancellationRequested)
             {
+                Logger.Warn("Upload File was cancelled");
                 return CreateCancelledResult(file.Name);
             }
 
@@ -450,16 +451,19 @@ namespace UploadBox.Services
 
             if (IsInvalidFileName(safeFileName))
             {
+                Logger.Error("Upload File has an Invalid File Name");
                 return CreateFailure(file.Name, UploadFailureCode.InvalidFileName);
             }
 
             if (IsInvalidDirectoryPath(fullDirectoryPath))
             {
+                Logger.Error("Upload File has an Invalid Directory");
                 return CreateFailure(file.Name, UploadFailureCode.DestinationUnavailable);
             }
 
             if (!IsValidUploadFile(file, safeFileName, out UploadFileResult invalidResult))
             {
+                Logger.Error("Upload File has is Invalid");
                 return invalidResult;
             }
 
